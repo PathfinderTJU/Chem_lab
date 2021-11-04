@@ -39,14 +39,6 @@
         </el-table-column>
       </el-table>
     </div>
-    <iframe
-  src="https://open.ys7.com/ezopen/h5/iframe_se?url=ezopen://open.ys7.com/E33136313/3.live&autoplay=1&audio=1&accessToken=at.12zuv6j338bbjqji9ax1akcb8arqxx34-9kezdqlpqi-014sgwa-ufvghm7vj&templete=2"
-  width="600"
-  height="400"
-  id="ysopen"
-  allowfullscreen
->
-</iframe>
     <!-- 新增弹窗 -->
     <el-dialog title="新增用户" :visible.sync="addFormVisible">
       <el-form ref="addForm" :model="addForm" label-width="100px" label-position="left" :rules="addRules" v-loading="isLoading">
@@ -81,7 +73,7 @@
     </el-dialog>
     <!-- 编辑弹窗 -->
     <el-dialog title="编辑用户信息" :visible.sync="editFormVisible">
-      <el-form ref="editForm" :model="editForm" label-width="100px" label-position="left" :rules="addRules" v-loading="isLoading">
+      <el-form ref="editForm" :model="editForm" label-width="100px" label-position="left" :rules="editRules" v-loading="isLoading">
         <el-form-item label="用户类型" prop="type">
           <el-select v-model="editForm.type">
             <el-option v-for="item in types" :key="item.value" :label="item.label" :value="item.value"></el-option>
@@ -89,12 +81,6 @@
         </el-form-item>
         <el-form-item label="用户名" prop="username">
           <el-input v-model="editForm.username" maxLength="20"></el-input>
-        </el-form-item>
-        <el-form-item label="密码" prop="password">
-          <el-input v-model="editForm.password" maxLength="20" type="password"></el-input>
-        </el-form-item>
-        <el-form-item label="确认密码" prop="confirm">
-          <el-input v-model="editForm.confirm" maxLength="20" type="password"></el-input>
         </el-form-item>
         <el-form-item label="手机号" prop="tel">
           <el-input v-model.number="editForm.tel" maxLength="11"></el-input>
@@ -105,11 +91,31 @@
         <el-form-item label="逻辑班号" v-if="editForm.type === 0" prop="class">
           <el-input v-model.number="editForm.class" ></el-input>
         </el-form-item>
+        <el-form-item label="新密码" prop="password">
+          <el-input v-model="editForm.password" maxLength="20" type="password"></el-input>
+        </el-form-item>
+        <el-form-item label="确认密码" prop="confirm">
+          <el-input v-model="editForm.confirm" maxLength="20" type="password"></el-input>
+        </el-form-item>
         <div class="add_footer">
           <el-button type="primary" @click="editSubmit('editForm')" :disabled="isDisabled">确定</el-button>
           <el-button @click="editCancel">取消</el-button>
         </div>
       </el-form>
+    </el-dialog>
+    <!-- 导入弹窗 -->
+    <el-dialog title="批量导入用户" :visible.sync="importFormVisible">
+      <el-upload
+        ref="upload"
+        action="https://jsonplaceholder.typicode.com/posts/" 
+        :before-remove="beforeRemove" 
+        :on-success="uploadSuccess"
+        :on-error="uploadError"
+        accept="application/vnd.ms-excel">
+        <el-button size="small" type="primary">点击上传</el-button>
+        <div slot="tip" class="el-upload__tip">只能上传Excel xlsx/xls文件</div>
+      </el-upload>
+      <el-button type="primary" size="small" style="margin-top: 20px">下载模板</el-button>
     </el-dialog>
   </div>
 </template>
@@ -126,8 +132,26 @@ export default {
         callback();
       }
     };
-    return{
 
+    //编辑表单，确认密码的验证
+    var editConfirmPasswordRule = (rule, value, callback) => {
+      if (this.editForm.password !== "" && value !== this.editForm.password){
+        callback(new Error("两次输入的密码不一致"));
+      }else{
+        callback();
+      }
+    };
+
+    //导入表单，确认密码的验证
+    var importConfirmPasswordRule = (rule, value, callback) => {
+      if (value !== this.importForm.password){
+        callback(new Error('两次输入的密码不一致'));
+      }else{
+        callback();
+      }
+    };
+
+    return{
       accountData: [
         // 【数据结构】用户数据
         // {
@@ -170,7 +194,12 @@ export default {
         class: ""
       },
       editForm: {}, //编辑弹窗表单数据
-      updateIndex: 0,
+      updateIndex: 0, //当前修改的数据index
+      importForm: { //导入弹窗表单数据
+        fileId: "",
+        password: "",
+        confirm: "",
+      },
       addRules: { //新增表单的完整性检查规则
         username: [
           {required: true, message: "请输入用户名", trigger: 'blur'}
@@ -193,6 +222,41 @@ export default {
         ],
         class: [
           {required: true, message: "请输入逻辑班号", trigger: 'blur'}
+        ]
+      },
+      editRules: { //编辑表单的完整性检查规则
+        username: [
+          {required: true, message: "请输入用户名", trigger: 'blur'}
+        ],
+        password: [
+          {min: 6, message: "密码长度不能少于6位", trigger: 'blur'}
+        ],
+        confirm:[
+          {validator: editConfirmPasswordRule, trigger: 'blur'}
+        ],
+        tel: [
+          {required: true, message: "请输入11位手机号码", trigger: 'blur'},
+          {min:11, type: 'number', message: "请输入正确的手机号码", trigger: 'blur'}
+        ],
+        email: [
+          {required: true, message: "请输入邮箱", trigger: 'blur'},
+          {type: 'email', message: "请输入正确的邮箱", trigger: 'blur'}
+        ],
+        class: [
+          {required: true, message: "请输入逻辑班号", trigger: 'blur'}
+        ]
+      },
+      importRules: { //导入表单的完整性检查规则
+        fileId: [
+          {required: true, message: "请上传名单文件", trigger: 'blur'}
+        ],
+        password: [
+          {required: true, message: "请输入密码", trigger: 'blur'},
+          {min: 6, message: "密码长度不能少于6位", trigger: 'blur'}
+        ],
+        confirm:[
+          {required: true, message: "请确认密码", trigger: 'blur'},
+          {validator: importConfirmPasswordRule, trigger: 'blur'}
         ]
       }
     }
@@ -230,68 +294,28 @@ export default {
       //   class：int
       // }
     },
+    // 删除数据
     deleteData(scope){
       let index = scope.$index;
       let id = this.showData[index].id;
       let that = this;
 
-      let request = new FormData();
-      request.append("id", id);
-      request.append("token", localStorage.getItem("token"));
-
-      fetch(this.URL + "exhibition/delete", {
-        method: 'POST',
-        body: request
-      }).then(res => res.json()).then(res => {
-        if (res.status === "failed" && (res.error === "token解析失败" || res.error.split("expired").length === 2)){
-          that.$message({
-            message: "登录已过期，请重新登录",
-            type: 'error'
-          })
-          that.$router.push("/login");
-          return false;
-        }
-
-        if (res.status === "succeed"){
-          that.showData.splice(index, 1);
-          that.$message({
-              message: "删除成功",
-              type: 'success'
-          })
-        }else{
-          that.$message({
-            message: "删除失败，服务器出错",
-            type: 'error'
-          })
-        }
-      })
+      // 【网络请求】删除用户
+      // 请求类型：DELETE
+      // 参数：token: string, id：string
+      // 返回值：无
     },
+    // 上传文件成功
     uploadSuccess(res){
-      if (res.status === "failed" && (res.error === "token解析失败" || res.error.split("expired").length === 2)){
-          that.$message({
-            message: "登录已过期，请重新登录",
-            type: 'error'
-          })
-          that.$router.push("/login");
-          return false;
-      }
-      let picUrl = res;
-      this.addForm.url = picUrl.message;
+
     },
+    // 上传文件出错
     uploadError(res){
-      if (res.status === "failed" && (res.error === "token解析失败" || res.error.split("expired").length === 2)){
-        that.$message({
-          message: "登录已过期，请重新登录",
-          type: 'error'
-        })
-        that.$router.push("/login");
-        return false;
-      }else{
-        this.$message({
-          message: "上传图片过大或服务器出错",
-          type: 'error'
-        })
-      }
+      
+    },
+    // 移除上传文件前询问
+    beforeRemove(file, fileList){
+      return this.$confirm('确认移除?')
     },
     // 提交增加表单
     addSubmit(formName){
@@ -334,6 +358,7 @@ export default {
           that.isLoading = false;
           //关闭表单
           that.addFormVisible = false;
+          this.$refs["addForm"].resetFields();
         } else { //验证未通过
           //恢复按钮
           that.isDisabled = false;
@@ -344,6 +369,7 @@ export default {
     // 取消提交增加表单
     addCancel(){
       this.addFormVisible = false;
+      this.$refs["addForm"].resetFields();
       //还原
       this.addForm = { 
         username: "",
@@ -360,119 +386,132 @@ export default {
       //填充数据
       let index = scope.$index;
       this.editForm = JSON.parse(JSON.stringify(this.accountData[index]));
+
+      //变更数据格式，便于验证表单正确性
+      this.editForm.tel = +this.editForm.tel;
+
       this.updateIndex = index;
       this.editFormVisible = true;
     },
-    beforeRemove(file, fileList){
-      return this.$confirm('确认移除?')
-    },
+    // 提交编辑表单
     editSubmit(formName){
       //禁用按钮
       this.isDisabled = true;
       let that = this;
       let data = this.editForm;
-      delete data.now_show;
-      data.now = +data.now;
-      data.data = JSON.stringify(data.data);
 
       this.$refs[formName].validate((valid) => {
         if (valid) { //验证通过
-            console.log("pass");
+          // 【网络请求】修改用户，返回修改后的用户
+          // 请求类型：PUT
+          // 参数：token: string, data：JSON
+          // {
+          //   username：string
+          //   password: string
+          //   type：int
+          //   tel：int
+          //   email：string
+          //   class：int
+          // }
+          // 返回值：data：JSON
+          // {
+          //   username：string
+          //   type：int
+          //   tel：int
+          //   email：string
+          //   class：int
+          // }
 
-            let request = new FormData();
-            request.append("entity", JSON.stringify(data));
-            request.append("token", localStorage.getItem("token"));
+          //恢复按钮
+          that.isDisabled = false;
+          //停止加载
+          that.isLoading = false;
+          //关闭表单
+          that.editFormVisible = false; 
 
-            fetch(that.URL + 'exhibition/update', {
-              method: 'POST',
-              body: request
-            }).then(res => res.json()).then(res => {
-              if (res.status === "failed" && (res.error === "token解析失败" || res.error.split("expired").length === 2)){
-                that.$message({
-                  message: "登录已过期，请重新登录",
-                  type: 'error'
-                })
-                that.$router.push("/login");
-                return false;
-              }
-
-              console.log(res);
-              //恢复按钮
-              that.isDisabled = false;
-              //停止加载
-              that.isLoading = false;
-              //关闭表单
-              that.editFormVisible = false;
-
-              fetch(this.URL + "exhibitions").then(res => res.json()).then(res => {
-                let data = JSON.parse(res.message);
-                data.forEach(value => {
-                  value.data = JSON.parse(value.data);
-                  value.now_show = value.now ? '是' : '否';
-                  value.now = Boolean(value.now);
-                });
-                that.showData = data;     
-              }).catch(err => {
-                console.log(err);
-                that.$message({
-                  message: "加载失败，服务器出错",
-                  type: 'error'
-                })
-
-                return false;
-              })
-
-              that.$message({
-                message: "修改成功",
-                type: 'success'
-              })
-            }).catch(err => {
-              console.log(err);
-              console.log(1);
-              that.$message({
-                message: "修改失败，服务器出错",
-                type: 'error'
-              })
-            })
-          } else {
-            console.log('error');
-            //恢复按钮
-            that.isDisabled = false;
-            return false;
-          }
+        } else {
+          //恢复按钮
+          that.isDisabled = false;
+          return false;
+        }
       })
+    },
+    // 取消提交编辑表单
+    editCancel(){
+      this.editFormVisible = false;
+      this.$refs["editForm"].resetFields();
+    },
+    // 提交导入表单
+    importSubmit(formName){
+      //禁用按钮
+      this.isDisabled = true;
+      let that = this;
+      let data = this.importForm;
+
+      this.$refs[formName].validate((valid) => {
+        if (valid) { //验证通过
+          // 【网络请求】批量导入用户，返回导入的数据
+          // 请求类型：POST
+          // 参数：token: string, data：JSON
+          // {
+          //   fileId：string
+          //   password: string
+          // }
+          // 返回值：data：JSON array
+          // [{
+          //   username：string
+          //   type：int
+          //   tel：int
+          //   email：string
+          //   class：int
+          // }]
+
+          //恢复按钮
+          that.isDisabled = false;
+          //停止加载
+          that.isLoading = false;
+          //关闭表单
+          that.editFormVisible = false; 
+
+        } else {
+          //恢复按钮
+          that.isDisabled = false;
+          return false;
+        }
+      })
+    },
+    // 取消提交导入表单
+    importCancel(){
+      this.importFormVisible = false;
+      this.$refs["importForm"].resetFields();
+      //还原
+      this.addForm = { 
+        fileId: "",
+        password: "",
+        confirm: ""
+      }
+    },
+    // 下载模板文件
+    download(){
+      // 【网络请求】下载模板文件
+      // 请求类型：GET
+      // 参数：无
+      // 返回值：无
     }
   },
+  // 初始化数据
   created: function(){
-    var player = document.getElementById('ysOpenDevice').contentWindow;
-/* iframe 支持方法 */
-player.postMessage("play", "https://open.ys7.com/ezopen/h5/iframe") /* 播放 */
-player.postMessage("stop", "https://open.ys7.com/ezopen/h5/iframe") /* 结束 */
-player.postMessage("capturePicture", "https://open.ys7.com/ezopen/h5/iframe") /* 截图 */
-player.postMessage("openSound", "https://open.ys7.com/ezopen/h5/iframe") /* 开启声音 */
-player.postMessage("closeSound", "https://open.ys7.com/ezopen/h5/iframe") /* 关闭声音 */
-player.postMessage("startSave", "https://open.ys7.com/ezopen/h5/iframe") /* 开始录制 */
-player.postMessage("stopSave", "https://open.ys7.com/ezopen/h5/iframe") /* 结束录制 */
-    this.uploadUrl = this.URL + 'uploadimg';
-    this.tokenData = {
-      token: localStorage.getItem("token")
-    }
-    fetch(this.URL + "exhibitions").then(res => res.json()).then(res => {
-      let data = JSON.parse(res.message);
-      data.forEach(value => {
-        value.data = JSON.parse(value.data);
-        value.now = Boolean(value.now);
-        value.now_show = value.now ? '是' : '否';
-      });
-      this.showData = data;
-      console.log(this.showData);
-    }).catch(err => {
-      console.log(err);
-      that.$message({
-        message: "加载失败，服务器出错",
-        type: 'error'
-      })    
-    })
+    // 【网络请求】请求学生类型的用户数据
+    // 请求类型：GET
+    // 参数：type：0
+    // 返回值：data：JSON array
+    // [{
+    //   username：string
+    //   type：int
+    //   tel：int
+    //   email：string
+    //   class：int
+    // }]
   }
 }
 </script>

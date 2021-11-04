@@ -1,6 +1,7 @@
 <template>
     <div id="index">
         <el-container class="outside">
+            <!-- 顶部 -->
             <el-header height="100px" class="header">
                 <div class="logo_block">
                     <img id="logo" src="../assets/pictures/logo.png"/>
@@ -8,7 +9,8 @@
                 <div id="title">化工学院远程实验管理平台</div>
             </el-header>
             <el-container class="container">
-                <el-aside width="300px" class="aside">
+                <!-- 侧边栏 -->
+                <el-aside width="20%" class="aside">
                     <el-menu :default-active="$route.path" class="el-menu-vertical-demo" router>
                         <el-menu-item index="/index/account">
                             <span slot="title">账户管理</span>
@@ -17,7 +19,13 @@
                             <span slot="title">设备管理</span>
                         </el-menu-item>
                         <el-submenu index="/index/plan">
-                            <span slot="title">开放计划管理</span>
+                            <span slot="title" >开放计划管理</span>
+                            <el-menu-item index="/index/plan">
+                                <span slot="title">开放情况</span>
+                            </el-menu-item>
+                            <el-menu-item index="/index/plan_reserve">
+                                <span slot="title">预约情况</span>
+                            </el-menu-item>
                             <el-menu-item index="/index/plan_day">
                                 <span slot="title">日开放计划</span>
                             </el-menu-item>
@@ -30,6 +38,7 @@
                         </el-menu-item>
                     </el-menu>
                 </el-aside>
+                <!-- 主要路由块 -->
                 <el-main class="main">
                     <router-view></router-view>
                 </el-main>
@@ -49,8 +58,12 @@ export default {
     height: 100%;
 }
 
+.header{
+    width: 100%;
+}
+
 .logo_block{
-    width: 300px;
+    width: 20%;
     text-align: center;
 }
 

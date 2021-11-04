@@ -9,6 +9,7 @@ import plan_day from '@/components/plan_day'
 import plan_edit from '@/components/plan_edit'
 import announcement from '@/components/announcement'
 import empty from '@/components/empty'
+import plan_reserve from '@/components/plan_reserve'
 
 Vue.use(Router)
 
@@ -50,6 +51,10 @@ export default new Router({
                 {
                     path: 'plan_edit',
                     component: plan_edit
+                },
+                {
+                    path: 'plan_reserve',
+                    component: plan_reserve
                 },
                 {
                     path: 'announcement',

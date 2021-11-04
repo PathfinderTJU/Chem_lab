@@ -1,10 +1,13 @@
 <template>
     <div id="announcement">
+        <!-- 标题 -->
         <div id="title">
             编辑公告
             <el-button id="edit_button" type="text" @click="openEdit">编辑</el-button>
         </div>
+        <!-- 正文 -->
         <p id="content" v-html="content"> </p>
+        <!-- 编辑弹窗 -->
         <el-dialog title="编辑关于我们信息" :visible.sync="editFormVisible">
             <el-form ref="editForm" :model="editForm" :rules="rules">
                 <el-form-item prop="content">
@@ -12,7 +15,7 @@
                 </el-form-item>
                 <div class="add_footer">
                     <el-button type="primary" @click="editSubmit('editForm')">确定</el-button>
-                    <el-button @click="editFormVisible = false">取消</el-button>
+                    <el-button @click="editCancel">取消</el-button>
                 </div>
             </el-form>
         </el-dialog>
@@ -24,23 +27,25 @@ export default {
     name: 'announcement',
     data(){
         return{
-            content: "xxxxxxxxxxxxxxxxxxx\nxxxxxxxx\n\nxxxx",
-            editForm: {},
-            editFormVisible: false,
+            content: "xxxxxxxxxxxxxxxxxxx\nxxxxxxxx\n\nxxxx", //正文内容
+            editForm: {}, // 编辑表单
+            editFormVisible: false, // 控制编辑弹窗
             rules: {
                 content: [
                     {required: true, message: "内容不能为空", trigger: 'blur'}
                 ]
-            }
+            } // 编辑表单提交规则
         }
     },
     methods: {
+        // 打开编辑弹窗，填充数据
         openEdit(){
             this.editForm = {
                 content: this.content
             };
             this.editFormVisible = true;
         },
+        // 提交编辑表单
         editSubmit(formName){
             let that = this;
             let value = this.editForm.content;
@@ -59,6 +64,11 @@ export default {
                     return false    
                 }
             })
+        },
+        // 取消提交编辑表单
+        editCancel(){
+            this.editFormVisible = false;
+            this.$refs["editForm"].resetFields();
         }
     },
     created(){

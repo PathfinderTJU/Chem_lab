@@ -1,22 +1,25 @@
 <template>
-  <div id="activity">
+  <div id="device">
     <!-- 头部 -->
     <div class="title_block">
-      <div class="title">公共活动管理</div>
+      <div class="title">设备管理</div>
       <el-button id="add_button" type="text" size="small" @click="addFormVisible = true">新增</el-button>
+    </div>
+    <!-- 选项 -->
+    <div class="option_block">
+      <div class="select_block">
+        <el-select v-model="nowType" @change="changeType">
+          <el-option v-for="item in types" :key="item.value" :value="item.value" :label="item.label">
+          </el-option>
+        </el-select>
+      </div>
     </div>
     <!-- 正文 -->
     <div class="table_block">
-      <el-table :data="activityData" height="100%" border stripe>
-        <el-table-column prop="id" label="ID" width="100"></el-table-column>
-        <el-table-column prop="title" label="标题" width="200"></el-table-column>
-        <el-table-column label="图片" width="100">
-          <template slot-scope="scope">
-            <el-button type="text" size="small" @click="openPicture(scope)">查看</el-button>
-          </template>
-        </el-table-column>
-        <el-table-column prop="content" label="描述"></el-table-column>
-        <el-table-column label="操作" width="100">
+      <el-table :data="deviceData" height="100%" border stripe>
+        <el-table-column prop="name" label="设备名称"></el-table-column>
+        <el-table-column prop="type_show" label="设备类型"></el-table-column>
+        <el-table-column label="操作">
           <template slot-scope="scope">
             <el-button type="text" size="small" @click="openEdit(scope)">编辑</el-button>
             <template>
@@ -28,35 +31,16 @@
         </el-table-column>
       </el-table>
     </div>
-    <el-dialog title="查看图片" :visible.sync="pictureVisible">
-      <el-carousel trigger="click">
-        <el-carousel-item v-for="item in picUrls" :key="item">
-          <el-image :src="item" fit="contain"></el-image>
-        </el-carousel-item>
-      </el-carousel>
-    </el-dialog>
     <!-- 新增弹窗 -->
-    <el-dialog title="新增景观" :visible.sync="addFormVisible">
-      <el-form ref="addForm" :model="addForm" label-width="100px" label-position="left" :rules="rules" v-loading="isLoading">
-        <el-form-item label="标题" prop="title">
-          <el-input v-model="addForm.title" maxLength="50"></el-input>
+    <el-dialog title="新增设备" :visible.sync="addFormVisible">
+      <el-form ref="addForm" :model="addForm" label-width="100px" label-position="left" :rules="addRules" v-loading="isLoading">
+        <el-form-item label="设备类型" prop="type">
+          <el-select v-model="addForm.type">
+            <el-option v-for="item in types" :key="item.value" :label="item.label" :value="item.value"></el-option>
+          </el-select>
         </el-form-item>
-        <el-form-item label="描述" prop="content">
-          <el-input v-model="addForm.content" type="textarea" rows="5" clearable></el-input>
-        </el-form-item>
-        <el-form-item label="图片" prop="urls">
-            <el-upload 
-              ref="upload"
-              name="imgfile"
-              :data="tokenData"
-              :action="uploadUrl"
-              :before-remove="beforeRemove"
-              :on-success="uploadSuccess"
-              :on-error="uploadError"
-              multiple>
-              <el-button size="small" type="primary">点击上传</el-button>
-              <div slot="tip">只能上传多张jpg/png文件</div>
-            </el-upload>
+        <el-form-item label="用户名" prop="name">
+          <el-input v-model="addForm.name" maxLength="20"></el-input>
         </el-form-item>
         <div class="add_footer">
           <el-button type="primary" @click="addSubmit('addForm')" :disabled="isDisabled">确定</el-button>
@@ -65,356 +49,321 @@
       </el-form>
     </el-dialog>
     <!-- 编辑弹窗 -->
-    <el-dialog title="编辑植物" :visible.sync="editFormVisible">
-        <el-form ref="editForm" :model="editForm" label-width="100px" label-position="left" :rules="rules" v-loading="isLoading">
-          <el-form-item label="ID">
-            <span>{{editForm.id}}</span>
-          </el-form-item>
-          <el-form-item label="标题" prop="title">
-            <el-input v-model="editForm.title" maxLength="50"></el-input>
-          </el-form-item>
-          <el-form-item label="描述" prop="content">
-            <el-input v-model="editForm.content" type="textarea" rows="5" clearable></el-input>
-          </el-form-item>
-          <el-form-item label="图片" prop="urls">
-              <template v-for="(item, index) in editForm.urls" >
-                <div :key="index">
-                  <span :key="item">{{item}}</span>
-                  <el-button :key="index" type="text" @click="deletePicture(index)">删除</el-button>
-                </div>
-              </template>
-              <el-upload 
-                ref="upload"
-                name="imgfile"
-                :data="tokenData"
-                :action="uploadUrl"
-                :before-remove="beforeRemove"
-                :on-success="uploadEditSuccess"
-                :on-error="uploadError">
-                <el-button size="small" type="primary">增加图片</el-button>
-                <div slot="tip">只能上传多张jpg/png文件</div>
-              </el-upload>
-          </el-form-item>
-          <div class="add_footer">
-            <el-button type="primary" @click="editSubmit('editForm')" :disabled="isDisabled">确定</el-button>
-            <el-button @click="editFormVisible = false">取消</el-button>
-          </div>
-        </el-form>
-      </el-dialog>
+    <el-dialog title="编辑用户信息" :visible.sync="editFormVisible">
+      <el-form ref="editForm" :model="editForm" label-width="100px" label-position="left" :rules="editRules" v-loading="isLoading">
+        <el-form-item label="用户类型" prop="type">
+          <el-select v-model="editForm.type">
+            <el-option v-for="item in types" :key="item.value" :label="item.label" :value="item.value"></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="用户名" prop="username">
+          <el-input v-model="editForm.username" maxLength="20"></el-input>
+        </el-form-item>
+        <el-form-item label="手机号" prop="tel">
+          <el-input v-model.number="editForm.tel" maxLength="11"></el-input>
+        </el-form-item>
+        <el-form-item label="邮箱" prop="email">
+          <el-input v-model="editForm.email" maxLength="50"></el-input>
+        </el-form-item>
+        <el-form-item label="逻辑班号" v-if="editForm.type === 0" prop="class">
+          <el-input v-model.number="editForm.class" ></el-input>
+        </el-form-item>
+        <el-form-item label="新密码" prop="password">
+          <el-input v-model="editForm.password" maxLength="20" type="password"></el-input>
+        </el-form-item>
+        <el-form-item label="确认密码" prop="confirm">
+          <el-input v-model="editForm.confirm" maxLength="20" type="password"></el-input>
+        </el-form-item>
+        <div class="add_footer">
+          <el-button type="primary" @click="editSubmit('editForm')" :disabled="isDisabled">确定</el-button>
+          <el-button @click="editCancel">取消</el-button>
+        </div>
+      </el-form>
+    </el-dialog>
   </div>
 </template>
 
 <script>
 export default {
-  name: 'activity',
+  name: 'account',
   data(){
+    //新增表单，确认密码的验证
+    var addConfirmPasswordRule = (rule, value, callback) => {
+      if (value !== this.addForm.password){
+        callback(new Error('两次输入的密码不一致'));
+      }else{
+        callback();
+      }
+    };
+
+    //编辑表单，确认密码的验证
+    var editConfirmPasswordRule = (rule, value, callback) => {
+      if (this.editForm.password !== "" && value !== this.editForm.password){
+        callback(new Error("两次输入的密码不一致"));
+      }else{
+        callback();
+      }
+    };
+
     return{
       deviceData: [
         // 【数据结构】设备数据
         // {
         //   name：string
         //   type：int
-        //   para：array
+        //   param: [{
+        //     key: string,
+        //     value: string
+        //   }]
         // }
+        {
+          name: "精馏设备1", 
+          type:0,
+          type_show: "精馏",
+          param: [
+            {
+              key: "温度",
+              value: "36°C"
+            },
+            {
+              key: "容积",
+              value: "5000ml"
+            }
+          ]
+        }
+      ], //用户数据
+      addFormVisible: false, //控制增加弹窗
+      editFormVisible: false, //控制编辑弹窗
+      nowType: 0, //当前设备类型
+      types: [ //设备类型
+        {value: 0, label: "精馏"},
+        {value: 1, label: "吸收-解吸"},
+        {value: 2, label: "化工传热"},
+        {value: 3, label: "流动过程"}
       ],
-      addFormVisible: false, //显示/隐藏表单弹窗
-      editFormVisible: false,
-      pictureVisible: false,
       isDisabled: false, //禁用表单提交按钮
       isLoading: false, //控制加载状态的出现
-      picUrls: [], //展示图片的URL,
-      havePic: true,
-      uploadUrl: "",
-      tokenData: {},
-      addForm: {
-        urls: [],
-        title: "",
-        content: ""
+      tokenData: {}, //token数据
+      addForm: { //新增弹窗表单数据
+        name: "",
+        type: 0,
+        param:[]
       },
-      editForm: {},
-      updateIndex: 0,
-      rules: {
-        title: [
-          {required: true, message: "请输入标题", trigger: 'blur'}
+      editForm: {}, //编辑弹窗表单数据
+      updateIndex: 0, //当前修改的数据index
+      addRules: { //新增表单的完整性检查规则
+        username: [
+          {required: true, message: "请输入用户名", trigger: 'blur'}
         ],
-        urls: [
-          {required: true, message: "请上传图片", trigger: 'blur'}
+        password: [
+          {required: true, message: "请输入密码", trigger: 'blur'},
+          {min: 6, message: "密码长度不能少于6位", trigger: 'blur'}
         ],
-        content:[
-          {required: true, message: "请输入文字描述", trigger: 'blur'}
+        confirm:[
+          {required: true, message: "请确认密码", trigger: 'blur'},
+          {validator: addConfirmPasswordRule, trigger: 'blur'}
+        ],
+        tel: [
+          {required: true, message: "请输入11位手机号码", trigger: 'blur'},
+          {min:11, type: 'number', message: "请输入正确的手机号码", trigger: 'blur'}
+        ],
+        email: [
+          {required: true, message: "请输入邮箱", trigger: 'blur'},
+          {type: 'email', message: "请输入正确的邮箱", trigger: 'blur'}
+        ],
+        class: [
+          {required: true, message: "请输入逻辑班号", trigger: 'blur'}
+        ]
+      },
+      editRules: { //编辑表单的完整性检查规则
+        username: [
+          {required: true, message: "请输入用户名", trigger: 'blur'}
+        ],
+        password: [
+          {min: 6, message: "密码长度不能少于6位", trigger: 'blur'}
+        ],
+        confirm:[
+          {validator: editConfirmPasswordRule, trigger: 'blur'}
+        ],
+        tel: [
+          {required: true, message: "请输入11位手机号码", trigger: 'blur'},
+          {min:11, type: 'number', message: "请输入正确的手机号码", trigger: 'blur'}
+        ],
+        email: [
+          {required: true, message: "请输入邮箱", trigger: 'blur'},
+          {type: 'email', message: "请输入正确的邮箱", trigger: 'blur'}
+        ],
+        class: [
+          {required: true, message: "请输入逻辑班号", trigger: 'blur'}
         ]
       }
     }
   },
   methods: {
+    // 更改下拉菜单：更改要显示的设备类型
+    changeType(index){
+      let type = index;
+
+      // 【网络请求】请求对应类型的设备数据
+      // 请求类型：GET
+      // 参数：type：int
+      // 返回值：data：JSON array
+      // [{
+      //   name：string
+      //   type：int
+      //   param: [{
+      //     key: string,
+      //     value: string
+      //   }]
+      // }]
+    },
+    // 删除数据
     deleteData(scope){
+      let index = scope.$index;
+      let id = this.deviceData[index].id;
       let that = this;
-      let index = scope.$index;
-      let id = this.activityData[index].id;
-      
-      let request = new FormData();
-      request.append("id", id);
-      request.append("token", localStorage.getItem("token"));
 
-      fetch(this.URL + 'activity/delete', {
-        method: 'POST',
-        body: request
-      }).then(res => res.json()).then(res => {
-        if (res.status === "failed" && (res.error === "token解析失败" || res.error.split("expired").length === 2)){
-          that.$message({
-            message: "登录已过期，请重新登录",
-            type: 'error'
-          })
-          that.$router.push("/login");
-          return false;
-        }
-
-        if (res.status === "succeed"){
-          that.activityData.splice(index, 1);
-          that.$message({
-              message: "删除成功",
-              type: 'success'
-          })
-        }else{
-          that.$message({
-            message: "删除失败，服务器出错",
-            type: 'error'
-          })
-        }
-      })
+      // 【网络请求】删除设备
+      // 请求类型：DELETE
+      // 参数：token: string, id：string
+      // 返回值：无
     },
-    openPicture(scope){
-      let index = scope.$index;
-      this.pictureVisible = true;
-      this.picUrls = JSON.parse(JSON.stringify(this.activityData[index].urls));
-      this.picUrls.forEach((value, index) => {
-        this.picUrls[index] = this.IMGBASE + value
-      })
-    },
-    uploadSuccess(res){
-      if (res.status === "failed" && (res.error === "token解析失败" || res.error.split("expired").length === 2)){
-        that.$message({
-          message: "登录已过期，请重新登录",
-          type: 'error'
-        })
-        that.$router.push("/login");
-        return false;
-      }
-      let picUrl = res;
-      this.addForm.urls.push(picUrl.message);
-    },
-    uploadEditSuccess(res){
-      if (res.status === "failed" && (res.error === "token解析失败" || res.error.split("expired").length === 2)){
-        that.$message({
-          message: "登录已过期，请重新登录",
-          type: 'error'
-        })
-        that.$router.push("/login");
-        return false;
-      }
-      let picUrl = res;
-      this.editForm.urls.push(picUrl.message);
-    },
-    uploadError(){
-      if (res.status === "failed" && (res.error === "token解析失败" || res.error.split("expired").length === 2)){
-        that.$message({
-          message: "登录已过期，请重新登录",
-          type: 'error'
-        })
-        that.$router.push("/login");
-        return false;
-      }else{
-        this.$message({
-          message: "上传图片过大或服务器出错",
-          type: 'error'
-        })
-      }
-    },
+    // 提交增加表单
     addSubmit(formName){
       //禁用按钮
       this.isDisabled = true;
       let that = this;
+      let data = this.addForm;
 
       //判断合法输入
       this.$refs[formName].validate((valid) => {
         if (valid) { //验证通过
-          console.log("pass");
+          that.isLoading = true;
+          that.isDisabled = true;
+          
+          // 【网络请求】新增用户，返回新增的用户
+          // 请求类型：POST
+          // 参数：token: string, data：JSON
+          // {
+          //   username：string
+          //   password: string
+          //   type：int
+          //   tel：int
+          //   email：string
+          //   class：int
+          // }
+          // 返回值：data：JSON
+          // {
+          //   username：string
+          //   type：int
+          //   tel：int
+          //   email：string
+          //   class：int
+          // }
 
-          let request = new FormData();
-          console.log(that.addForm);
-          request.append("entity", JSON.stringify(that.addForm));
-          request.append("token", localStorage.getItem("token"));
+          //将新增数据加入表格，若表格显示的不是当前类型则不添加
 
-          fetch(that.URL + 'activity/insert', {
-            method: 'POST',
-            body: request
-          }).then(res => res.json()).then(res => {
-            if (res.status === "failed" && (res.error === "token解析失败" || res.error.split("expired").length === 2)){
-              that.$message({
-                message: "登录已过期，请重新登录",
-                type: 'error'
-              })
-              that.$router.push("/login");
-              return false;
-            }
-
-            //恢复按钮
-            that.isDisabled = false;
-            //停止加载
-            that.isLoading = false;
-            //关闭表单
-            that.addFormVisible = false;
-            
-            fetch(that.URL + "activities").then(res => res.json()).then(res => {
-              let data = JSON.parse(res.message);
-              that.activityData = data;
-            }).catch(err => {
-              console.log(err);
-              that.$message({
-                message: "加载失败，服务器出错",
-                type: 'error'
-              })
-
-              return false;
-            })
-
-
-            that.addForm = {
-              urls: [],
-              title: "",
-              content: ""
-            }
-
-            that.$message({
-              message: "添加成功",
-              type: 'success'
-            })
-          }).catch(err => {
-            console.log(err);
-            //恢复按钮
-            that.isDisabled = false;
-            //停止加载
-            that.isLoading = false;
-            that.$message({
-              message: "添加失败，服务器出错",
-              type: 'error'
-            })
-          })
-        } else {
-          console.log('error');
+          //恢复按钮
+          that.isDisabled = false;
+          //停止加载
+          that.isLoading = false;
+          //关闭表单
+          that.addFormVisible = false;
+          this.$refs["addForm"].resetFields();
+        } else { //验证未通过
           //恢复按钮
           that.isDisabled = false;
           return false;
         }
       });
     },
+    // 取消提交增加表单
     addCancel(){
       this.addFormVisible = false;
-      this.addForm = {
-        urls: [],
-        title: "",
-        content: ""
+      this.$refs["addForm"].resetFields();
+      //还原
+      this.addForm = { 
+        username: "",
+        password: "",
+        confirm: "",
+        type: 0,
+        tel: "",
+        email: "",
+        class: ""
       }
     },
+    // 向编辑表单中填充数据
     openEdit(scope){
       //填充数据
       let index = scope.$index;
-      this.editForm = JSON.parse(JSON.stringify(this.activityData[index]));
+      this.editForm = JSON.parse(JSON.stringify(this.accountData[index]));
+
       this.updateIndex = index;
       this.editFormVisible = true;
-      console.log(this.editForm);
     },
-    beforeRemove(file, fileList){
-      return this.$confirm('确认移除?')
-    },
-    deletePicture(index){
-      this.editForm.urls.splice(index, 1);
-      console.log(this.editForm);
-    }, 
+    // 提交编辑表单
     editSubmit(formName){
       //禁用按钮
       this.isDisabled = true;
       let that = this;
+      let data = this.editForm;
 
       this.$refs[formName].validate((valid) => {
         if (valid) { //验证通过
-            console.log("pass");
-            let request = new FormData();
-            request.append("entity", JSON.stringify(that.editForm));
-            request.append("token", localStorage.getItem("token"));
+          // 【网络请求】修改用户，返回修改后的用户
+          // 请求类型：PUT
+          // 参数：token: string, data：JSON
+          // {
+          //   username：string
+          //   password: string
+          //   type：int
+          //   tel：int
+          //   email：string
+          //   class：int
+          // }
+          // 返回值：data：JSON
+          // {
+          //   username：string
+          //   type：int
+          //   tel：int
+          //   email：string
+          //   class：int
+          // }
 
-            fetch(that.URL + 'activity/update', {
-              method: 'POST',
-              body: request 
-            }).then(res => res.json()).then(res => {
-              if (res.status === "failed" && (res.error === "token解析失败" || res.error.split("expired").length === 2)){
-                that.$message({
-                  message: "登录已过期，请重新登录",
-                  type: 'error'
-                })
-                that.$router.push("/login");
-                return false;
-              }
+          //恢复按钮
+          that.isDisabled = false;
+          //停止加载
+          that.isLoading = false;
+          //关闭表单
+          that.editFormVisible = false; 
 
-              //恢复按钮
-              that.isDisabled = false;
-              //停止加载
-              that.isLoading = false;
-              //关闭表单
-              that.editFormVisible = false;
-
-              fetch(that.URL + "activities").then(res => res.json()).then(res => {
-                let data = JSON.parse(res.message);
-                that.activityData = data;
-              }).catch(err => {
-                console.log(err);
-                that.$message({
-                  message: "加载失败，服务器出错",
-                  type: 'error'
-                })
-
-                return false;
-              })
-
-              that.$message({
-                message: "修改成功",
-                type: 'success'
-              })
-            }).catch(err => {
-              console.log(err);
-              //恢复按钮
-              that.isDisabled = false;
-              //停止加载
-              that.isLoading = false;
-              that.$message({
-                message: "修改失败，服务器出错",
-                type: 'error'
-              })
-            })
-          } else {
-            console.log('error');
-            //恢复按钮
-            that.isDisabled = false;
-            return false;
-          }
+        } else {
+          //恢复按钮
+          that.isDisabled = false;
+          return false;
+        }
       })
-    }
+    },
+    // 取消提交编辑表单
+    editCancel(){
+      this.editFormVisible = false;
+      this.$refs["editForm"].resetFields();
+    },  
   },
+  // 初始化数据
   created: function(){
-    this.uploadUrl = this.URL + 'uploadimg';
-    this.tokenData = {
-      token: localStorage.getItem("token")
-    }
-    fetch(this.URL + "activities").then(res => res.json()).then(res => {
-      let data = JSON.parse(res.message);
-      this.activityData = data;
-    }).catch(err => {
-      console.log(err);
-      that.$message({
-        message: "加载失败，服务器出错",
-        type: 'error'
-      })            
-    })
+    // 【网络请求】请求精馏类型的用户数据
+    // 请求类型：GET
+    // 参数：type：0
+    // 返回值：data：JSON array
+    // [{
+    //   name：string
+    //   type：int
+    //   param: [{
+    //     key: string,
+    //     value: string
+    //   }]
+    // }]
   }
 }
 </script>
@@ -430,35 +379,32 @@ div {
   box-sizing: border-box;
 }
 
-#activity{
-    padding: 30px;
-    height: 100%;
+#device{
+  padding: 10px 30px 10px 30px;
+  height: 100%;
 }
 
-.title_block{
+.title_block, .option_block{
   width: 100%;
   display: flex;
   align-items: center;
-  height: 5%;
-  margin-bottom: 20px;
+  height: 10%;
+  padding-bottom: 20px;
 }
 
 .title{
   font-size: 25px;
 }
 
-#add_button{
+#add_button, #import_button{
   padding-left: 20px;
 }
 
+.search_block{
+  display: flex;
+}
+
 .table_block{
-  height: 90%;
-  padding-bottom: 20px;
+  height: 70%;
 }
-
-.page_block{
-  height: 5%;
-  text-align: center;
-}
-
 </style>
