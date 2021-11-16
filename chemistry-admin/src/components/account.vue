@@ -56,6 +56,12 @@
         <el-form-item label="确认密码" prop="confirm">
           <el-input v-model="addForm.confirm" maxLength="20" type="password"></el-input>
         </el-form-item>
+        <el-form-item label="学校" prop="university">
+          <el-input v-model="addForm.university" maxLength="20"></el-input>
+        </el-form-item>
+        <el-form-item label="学院" prop="school">
+          <el-input v-model="addForm.school" maxLength="20"></el-input>
+        </el-form-item>
         <el-form-item label="手机号" prop="tel">
           <el-input v-model.number="addForm.tel" maxLength="11"></el-input>
         </el-form-item>
@@ -191,15 +197,12 @@ export default {
         type: 0,
         tel: "",
         email: "",
-        class: ""
+        class: "",
+        university: "",
+        school: "",
       },
       editForm: {}, //编辑弹窗表单数据
       updateIndex: 0, //当前修改的数据index
-      importForm: { //导入弹窗表单数据
-        fileId: "",
-        password: "",
-        confirm: "",
-      },
       addRules: { //新增表单的完整性检查规则
         username: [
           {required: true, message: "请输入用户名", trigger: 'blur'}
@@ -213,15 +216,19 @@ export default {
           {validator: addConfirmPasswordRule, trigger: 'blur'}
         ],
         tel: [
-          {required: true, message: "请输入11位手机号码", trigger: 'blur'},
           {min:11, type: 'number', message: "请输入正确的手机号码", trigger: 'blur'}
         ],
         email: [
-          {required: true, message: "请输入邮箱", trigger: 'blur'},
           {type: 'email', message: "请输入正确的邮箱", trigger: 'blur'}
         ],
         class: [
           {required: true, message: "请输入逻辑班号", trigger: 'blur'}
+        ],
+        university: [
+          {required: true, message: "请输入学校", trigger: 'blur'}
+        ],
+        school: [
+          {required: true, message: "请输入学院", trigger: 'blur'}
         ]
       },
       editRules: { //编辑表单的完整性检查规则
