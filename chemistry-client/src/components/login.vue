@@ -73,6 +73,9 @@ export default {
                 //关闭表单
                 that.editFormVisible = false; 
 
+
+                // 用户类型和用户名存入全局变量
+                
                 } else {
                     //恢复按钮
                     that.isDisabled = false;

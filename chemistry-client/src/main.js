@@ -14,6 +14,7 @@ Vue.use(ElementUI);
 Vue.prototype.URL = URL;
 Vue.prototype.PUBLICKEY = "";
 Vue.prototype.userType = userType;
+Vue.prototype.userName = "default";
 
 /* eslint-disable no-new */
 new Vue({
