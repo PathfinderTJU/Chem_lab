@@ -5,6 +5,7 @@
       <div class="title">账户管理</div>
       <el-button id="add_button" type="text" size="small" @click="addFormVisible = true">新增</el-button>
       <el-button id="import_button" type="text" size="small" @click="importFormVisible = true">导入</el-button>
+      <el-button type="text" size="small" @click="download">下载模板</el-button>
     </div>
     <!-- 选项 -->
     <div class="option_block">
@@ -121,7 +122,6 @@
         <el-button size="small" type="primary">点击上传</el-button>
         <div slot="tip" class="el-upload__tip">只能上传Excel xlsx/xls文件</div>
       </el-upload>
-      <el-button type="primary" size="small" style="margin-top: 20px">下载模板</el-button>
     </el-dialog>
   </div>
 </template>
@@ -242,11 +242,9 @@ export default {
           {validator: editConfirmPasswordRule, trigger: 'blur'}
         ],
         tel: [
-          {required: true, message: "请输入11位手机号码", trigger: 'blur'},
           {min:11, type: 'number', message: "请输入正确的手机号码", trigger: 'blur'}
         ],
         email: [
-          {required: true, message: "请输入邮箱", trigger: 'blur'},
           {type: 'email', message: "请输入正确的邮箱", trigger: 'blur'}
         ],
         class: [

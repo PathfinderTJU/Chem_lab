@@ -32,7 +32,7 @@
       </el-table>
     </div>
     <!-- 新增弹窗 -->
-    <el-dialog title="新增设备" :visible.sync="addFormVisible">
+    <el-dialog title="新增设备" :visible.sync="addFormVisible" @close="closeDialog('addForm')">
       <el-form ref="addForm" :model="addForm" label-width="100px" label-position="left" :rules="addRules" v-loading="isLoading">
         <el-form-item label="设备类型" prop="type">
           <el-select v-model="addForm.type">
@@ -49,9 +49,9 @@
       </el-form>
     </el-dialog>
     <!-- 编辑弹窗 -->
-    <el-dialog title="编辑用户信息" :visible.sync="editFormVisible">
+    <el-dialog title="编辑用户信息" :visible.sync="editFormVisible" @close="closeDialog('editForm')">
       <el-form ref="editForm" :model="editForm" label-width="100px" label-position="left" :rules="editRules" v-loading="isLoading">
-        <el-form-item label="用户类型" prop="type">
+        <el-form-item label="设备类型" prop="type">
           <el-select v-model="editForm.type">
             <el-option v-for="item in types" :key="item.value" :label="item.label" :value="item.value"></el-option>
           </el-select>
@@ -87,24 +87,6 @@
 export default {
   name: 'account',
   data(){
-    //新增表单，确认密码的验证
-    var addConfirmPasswordRule = (rule, value, callback) => {
-      if (value !== this.addForm.password){
-        callback(new Error('两次输入的密码不一致'));
-      }else{
-        callback();
-      }
-    };
-
-    //编辑表单，确认密码的验证
-    var editConfirmPasswordRule = (rule, value, callback) => {
-      if (this.editForm.password !== "" && value !== this.editForm.password){
-        callback(new Error("两次输入的密码不一致"));
-      }else{
-        callback();
-      }
-    };
-
     return{
       deviceData: [
         // 【数据结构】设备数据
@@ -152,27 +134,8 @@ export default {
       editForm: {}, //编辑弹窗表单数据
       updateIndex: 0, //当前修改的数据index
       addRules: { //新增表单的完整性检查规则
-        username: [
+        name: [
           {required: true, message: "请输入用户名", trigger: 'blur'}
-        ],
-        password: [
-          {required: true, message: "请输入密码", trigger: 'blur'},
-          {min: 6, message: "密码长度不能少于6位", trigger: 'blur'}
-        ],
-        confirm:[
-          {required: true, message: "请确认密码", trigger: 'blur'},
-          {validator: addConfirmPasswordRule, trigger: 'blur'}
-        ],
-        tel: [
-          {required: true, message: "请输入11位手机号码", trigger: 'blur'},
-          {min:11, type: 'number', message: "请输入正确的手机号码", trigger: 'blur'}
-        ],
-        email: [
-          {required: true, message: "请输入邮箱", trigger: 'blur'},
-          {type: 'email', message: "请输入正确的邮箱", trigger: 'blur'}
-        ],
-        class: [
-          {required: true, message: "请输入逻辑班号", trigger: 'blur'}
         ]
       },
       editRules: { //编辑表单的完整性检查规则

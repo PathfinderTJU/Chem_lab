@@ -25,7 +25,7 @@
             </el-table>
         </div>
         <!-- 修改开放计划弹窗 -->
-        <el-dialog title="选择日开放计划" :visible.sync="planChangeVisible" @close="closeDialog">
+        <el-dialog title="选择日开放计划" :visible.sync="planChangeVisible" @close="closeDialog('editForm')">
             <el-form ref="editForm" :model="editForm" label-width="150px" label-position="left" :rules="planRules">
                 <el-form-item label="选择设备" prop="devices">
                     <el-checkbox :indeterminate="isIndeterminate" v-model="checkAll" @change="checkAllChange">全选</el-checkbox>
@@ -45,7 +45,7 @@
             </el-form>
         </el-dialog>
         <!-- 单独修改弹窗 -->
-        <el-dialog title="单独修改" :visible.sync="cellChangeVisible" @close="closeDialog">
+        <el-dialog title="单独修改" :visible.sync="cellChangeVisible" @close="closeDialog('editForm')">
             <el-form ref="editForm" :model="editForm" label-width="150px" label-position="left">
                 <el-form-item label="选择开放设备" prop="devices">
                     <el-checkbox :indeterminate="isIndeterminate" v-model="checkAll" @change="checkAllChange">全选</el-checkbox>
@@ -234,9 +234,10 @@ export default {
             this.cellChangeVisible = false;
         },
         // 关闭弹窗，还原多选框组
-        closeDialog(){
+        closeDialog(formName){
             this.isIndeterminate = false;
             this.checkAll = false;
+            this.$refs[formName].resetFields();
         },
         // 下一周
         nextWeek(){
