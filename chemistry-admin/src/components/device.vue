@@ -163,6 +163,10 @@ export default {
     }
   },
   methods: {
+    // 关闭弹窗
+    closeDialog(formName){
+      this.$refs[formName].resetFields();
+    },
     // 更改下拉菜单：更改要显示的设备类型
     changeType(index){
       let type = index;
