@@ -7,7 +7,7 @@ import ElementUI from 'element-ui'
 import 'element-ui/lib/theme-chalk/index.css'
 
 const URL = "http://localhost:8080";
-var userType = 0;
+var userType = true;
 
 Vue.config.productionTip = false;
 Vue.use(ElementUI);
