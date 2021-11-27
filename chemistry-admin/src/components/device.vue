@@ -39,7 +39,7 @@
             <el-option v-for="item in types" :key="item.value" :label="item.label" :value="item.value"></el-option>
           </el-select>
         </el-form-item>
-        <el-form-item label="用户名" prop="name">
+        <el-form-item label="设备名称" prop="name">
           <el-input v-model="addForm.name" maxLength="20"></el-input>
         </el-form-item>
         <div class="add_footer">
@@ -48,7 +48,7 @@
         </div>
       </el-form>
     </el-dialog>
-    <!-- 编辑弹窗 -->
+    <!-- 编辑弹窗
     <el-dialog title="编辑用户信息" :visible.sync="editFormVisible" @close="closeDialog('editForm')">
       <el-form ref="editForm" :model="editForm" label-width="100px" label-position="left" :rules="editRules" v-loading="isLoading">
         <el-form-item label="设备类型" prop="type">
@@ -79,7 +79,7 @@
           <el-button @click="editCancel">取消</el-button>
         </div>
       </el-form>
-    </el-dialog>
+    </el-dialog> -->
   </div>
 </template>
 
@@ -135,31 +135,34 @@ export default {
       updateIndex: 0, //当前修改的数据index
       addRules: { //新增表单的完整性检查规则
         name: [
-          {required: true, message: "请输入用户名", trigger: 'blur'}
+          {required: true, message: "请输入设备名", trigger: 'blur'}
+        ],
+        ip: [
+          {required: true, message: "请输入IP地址", trigger: 'blur'}
         ]
       },
-      editRules: { //编辑表单的完整性检查规则
-        username: [
-          {required: true, message: "请输入用户名", trigger: 'blur'}
-        ],
-        password: [
-          {min: 6, message: "密码长度不能少于6位", trigger: 'blur'}
-        ],
-        confirm:[
-          {validator: editConfirmPasswordRule, trigger: 'blur'}
-        ],
-        tel: [
-          {required: true, message: "请输入11位手机号码", trigger: 'blur'},
-          {min:11, type: 'number', message: "请输入正确的手机号码", trigger: 'blur'}
-        ],
-        email: [
-          {required: true, message: "请输入邮箱", trigger: 'blur'},
-          {type: 'email', message: "请输入正确的邮箱", trigger: 'blur'}
-        ],
-        class: [
-          {required: true, message: "请输入逻辑班号", trigger: 'blur'}
-        ]
-      }
+      // editRules: { //编辑表单的完整性检查规则
+      //   username: [
+      //     {required: true, message: "请输入用户名", trigger: 'blur'}
+      //   ],
+      //   password: [
+      //     {min: 6, message: "密码长度不能少于6位", trigger: 'blur'}
+      //   ],
+      //   confirm:[
+      //     {validator: editConfirmPasswordRule, trigger: 'blur'}
+      //   ],
+      //   tel: [
+      //     {required: true, message: "请输入11位手机号码", trigger: 'blur'},
+      //     {min:11, type: 'number', message: "请输入正确的手机号码", trigger: 'blur'}
+      //   ],
+      //   email: [
+      //     {required: true, message: "请输入邮箱", trigger: 'blur'},
+      //     {type: 'email', message: "请输入正确的邮箱", trigger: 'blur'}
+      //   ],
+      //   class: [
+      //     {required: true, message: "请输入逻辑班号", trigger: 'blur'}
+      //   ]
+      // }
     }
   },
   methods: {
