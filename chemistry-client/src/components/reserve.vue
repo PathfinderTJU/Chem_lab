@@ -207,13 +207,13 @@ export default {
 <style>
 /* 未开放：灰色 */
 .el-table .reserveClose{ 
-    background-color: rgb(255, 77, 77) !important; /* 保证不会被改变 */
+    background-color: rgb(189, 189, 189) !important; /* 保证不会被改变 */
     color: white !important;
 }
 
 /* 约满：红色 */
 .el-table .reserveFull{
-    background-color: rgb(158, 158, 158) !important; /* 保证不会被改变 */
+    background-color: rgb(133, 132, 132) !important; /* 保证不会被改变 */
     color: white !important;
 }
 
