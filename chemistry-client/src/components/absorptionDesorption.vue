@@ -1,19 +1,20 @@
 <template>
     <div id="absorptionDesorption">
         <div class="img_block">
-            <img src="../assets/absorption.jpg" id="ex_img" ref="img"/>
+            <img src="../assets/absorption.jpg" id="ex_img" ref="img" @load="setVideoHeight"/>
             <!-- 显示数据 -->
             <span class="param_show" v-for="(value, key) in params_show" :key="key.id" :id="key">{{value}}</span>
-            <span class="control_show" v-for="(value, index) in options_show" :key="value.id" :id="value.classId">
-                <span class="contorl_data" v-if="value.haveData">{{value.data}}</span>
-                <el-popover class="control_pop" placement="top" trigger="click" width="160" v-model="value.controlVisible">
+            <span class="control_show" v-for="(value, key) in options_show" :key="key" :id="key">
+                <span class="control_data" v-if="value.haveData">{{value.data}}</span>
+                <span class="control_data" v-if="value.haveSwitch">{{value.open ? '打开' : '关闭'}}</span>
+                <el-popover class="control_pop" placement="top" trigger="click" width="160" v-model="value.controlVisible" @show="showControl(key)" @hide="closeControl(key)">
                     <div>{{value.name}}</div>
                     <div class="control_input" v-if="value.haveData">
-                        <el-input v-model="value.data"></el-input>
-                        <el-button type="primary" @click="updateOption(index)" :disabled="value.haveSwitch && !value.open">修改</el-button>
+                        <el-input v-model="dataBuffer"></el-input>
+                        <el-button type="primary" @click="updateOption(key)" :disabled="(value.haveSwitch && !value.open) || releaseDisabled">修改</el-button>
                     </div>
                     <div v-if="value.haveSwitch">
-                        <el-switch v-model="value.open" active-text="打开" inactive-text="关闭" @change="updateSwitch(index)"></el-switch>
+                        <el-switch v-model.lazy="value.open" active-text="打开" inactive-text="关闭" @change="updateSwitch(key)" :disabled="releaseDisabled"></el-switch>
                     </div>
                 <i style="padding-left: 5px;color:#E6A23C;cursor:pointer;" class="el-icon-s-tools" slot="reference"></i>
                 </el-popover>
@@ -34,16 +35,16 @@
                         <el-button type="text" @click="showMember">成员信息</el-button>
                     </el-badge>
                 </div>
-                <el-button class="control_button" type="primary">申请操作</el-button>
-                <el-button class="control_button" type="warning">结束操作</el-button>
+                <el-button class="control_button" type="primary" @click="applyToken" :disabled="applyDisabled">申请操作</el-button>
+                <el-button class="control_button" type="warning" @click="releaseToken" :disabled="releaseDisabled">结束操作</el-button>
             </div>
             <!-- 退出按钮 -->
             <div class="ex_bottom">
-                <el-button type="danger">退出实验</el-button>
+                <el-button type="danger" :disabled="applyDisabled" :title="applyDisabled ? '请先释放操作权' : '' " @click="exit">退出实验</el-button>
             </div>
         </div>
         <!-- 成员信息和聊天框 -->
-        <el-drawer title="成员信息" :visible="memberVisible" @close="closeMember">
+        <el-drawer title="成员信息" :visible="memberVisible" @open="refreshMember" @close="closeMember">
             <div class="members_block">
                 <div class="member_title">在实验中的成员</div>
                 <div class="members" v-for="item in members" :key="item">{{item}}</div>
@@ -53,7 +54,7 @@
                 <div class="display_block">
                     <div class="messages" v-for="item in messages" :key="item.content">
                         <span class="speaker">{{item.username}}</span>
-                        说：{{item.content}}
+                        说：{{item.message}}
                     </div>
                 </div>
                 <div class="send_block">
@@ -70,20 +71,21 @@ export default {
     name: 'absorptionDesorption',
     data(){
         return{
-            endTime: "21:30",
+            ticketId: 1,
+            endTime: "",
             params_show:{ //显示的数据
-                'f3': 3.45,
-                'f4': 4.56,
-                't1': 1.234,
-                't2': 2.345,
-                't3': 3.456,
-                'p1': 1.2,
-                'p2': 2.3,
-                'p3': 3.4,
-                'p4': 4.5,
-                'p5': 5.6,
-                'l1': 1.2345,
-                'l2': 2.3456
+                'f3': '---',
+                'f4': '---',
+                't1': '---',
+                't2': '---',
+                't3': '---',
+                'p1': '---',
+                'p2': '---',
+                'p3': '---',
+                'p4': '---',
+                'p5': '---',
+                'l1': '---',
+                'l2': '---'
             }, 
             cams: [
                 {
@@ -104,168 +106,216 @@ export default {
                 }
             ], //摄像头数据
             nowVideo: {}, //当前摄像头数据
-            videoHeight: 0,
-            nowController: "2021244091", //当前操作者
-            options_show: [
-                {
+            videoHeight: 0, // 摄像头高度
+            nowController: "", //当前操作者
+            applyDisabled: false, //申请令牌禁用
+            releaseDisabled: true, //释放令牌禁用
+            options_show: {
+                "lixin1": {
                     id: 1,
-                    classId: 'lixin1',
                     name: '离心泵1频率',
                     haveSwitch: true,
                     haveData: true,
-                    open: true,
-                    data: 100,
+                    open: false,
+                    data: '---',
                     controlVisible: false
                 },
-                {
+                "lixin2": {
                     id: 2,
-                    classId: 'lixin2',
                     name: '离心泵2频率',
                     haveSwitch: true,
                     haveData: true,
-                    open: true,
-                    data: 200,
+                    open: false,
+                    data: '---',
                     controlVisible: false
                 },
-                {
+                "xuanwo": {
                     id: 3,
-                    classId: 'xuanwo',
                     name: '旋涡风机频率',
                     haveSwitch: true,
                     haveData: true,
-                    open: true,
-                    data: 300,
+                    open: false,
+                    data: '---',
                     controlVisible: false
                 },
-                {
+                "fxbkg": {
                     id: 4,
-                    classId: 'fenxi',
                     name: '分析气泵',
                     haveSwitch: true,
                     haveData: false,
-                    open: true,
+                    open: false,
                     controlVisible: false
-                },{
+                },
+                "f1": {
                     id: 5,
-                    classId: 'co2',
                     name: 'CO2流量',
                     haveSwitch: false,
                     haveData: true,
-                    data: 20,
+                    data: '---',
                     controlVisible: false
                 },
-                {
+                "airf": {
                     id: 6,
-                    classId: 'airf',
                     name: '空气流量F',
                     haveSwitch: false,
                     haveData: true,
-                    data: 4,
+                    data: '---',
                     controlVisible: false
                 },
-                {
+                "airfvb": {
                     id: 7,
-                    classId: 'airfvb',
-                    name: '空气流量F',
+                    name: '空气流量Fvb',
                     haveSwitch: false,
                     haveData: true,
-                    data: 5,
+                    data: '---',
                     controlVisible: false
                 },
-                {
+                "m1": {
                     id: 8,
-                    classId: 'm1',
                     name: 'M1开度（%）',
                     haveSwitch: false,
                     haveData: true,
-                    data: 50,
+                    data: '---',
                     controlVisible: false
                 },
-                {
+                "m2": {
                     id: 9,
-                    classId: 'm2',
                     name: 'M2开度（%）',
                     haveSwitch: false,
                     haveData: true,
-                    data: 60,
+                    data: '---',
                     controlVisible: false
                 },
-                {
+                "m3": {
                     id: 10,
-                    classId: 'm3',
                     name: 'M3开度（%）',
                     haveSwitch: false,
                     haveData: true,
-                    data: 70,
+                    data: '---',
                     controlVisible: false
                 },
-                {
+                "beng": {
                     id: 11,
-                    classId: 'beng',
                     name: '气泵',
                     haveSwitch: true,
                     haveData: false,
-                    open: true,
+                    open: false,
                     controlVisible: false
-                }
-                
-            ], // 操作选项的数据
-            members: [
-                '2021244091', '3017218063', '3017218071', '100220'
-            ], // 实验中的成员
+                }   
+            }, // 操作选项的数据
+            members: [], // 实验中的成员
             memberVisible: false, // 成员抽屉面板控制
             buffer: "", //聊天区缓存
-            messages: [
-                {
-                    username: '100220',
-                    content: "同学你好，我是李罡，很高兴与你一起做实验"
-                },
-                {
-                    username: '2021244091',
-                    content: "同学你好，我是刘兴宇"
-                },
-                {
-                    username: '2021244091',
-                    content: "好的"
-                },
-                {
-                    username: '3017128063',
-                    content: "同学你好，我是刘杭学，很高兴与你一起做实验"
-                },
-                {
-                    username: '3017218071',
-                    content: "同学你好，我是xxx，我是第一次做实验，很高兴与你一起做实验，希望系统不要有BUG"
-                },{
-                    username: '100220',
-                    content: "同学你好，我是李罡，很高兴与你一起做实验"
-                },{
-                    username: '100220',
-                    content: "同学你好，我是李罡，很高兴与你一起做实验"
-                },{
-                    username: '100220',
-                    content: "同学你好，我是李罡，很高兴与你一起做实验"
-                },{
-                    username: '100220',
-                    content: "同学你好，我是李罡，很高兴与你一起做实验"
-                },{
-                    username: '100220',
-                    content: "同学你好，我是李罡，很高兴与你一起做实验"
-                },{
-                    username: '100220',
-                    content: "同学你好，我是李罡，很高兴与你一起做实验"
-                },
-            ], //聊天记录数据
-            haveNewMsg: true //聊天区是否有新消息
+            dataBuffer: "", //数据区缓存
+            switchBuffer: "", //开关区缓存
+            messages: [], //聊天记录数据
+            haveNewMsg: false //聊天区是否有新消息
         }
     },
     methods: {
+        // 获取结束时间
+        getEndTime(){
+            fetch(this.URL + '/api/experiementing/' + this.ticketId + 
+                '/endTime?ticketId=' + this.ticketId, {
+                method: 'GET',
+                headers: {
+                    Authorization: 'Bearer  ' + localStorage.getItem("token") 
+                }
+            }).then(res => res.json()).then(res => {
+                if(res.success){
+                    let data = res.data;
+                    this.endTime = data;
+                }else{
+                    if (res.status === 401){
+                        this.$message({
+                            message: "登录已过期",
+                            type: 'error'
+                        })
+                    }else{
+                        this.$message({
+                            message: "未知错误" + res.status,
+                            type: 'error'
+                        })
+                    }
+                }
+            }).catch(err => {
+                this.$message({
+                    message: "加载失败，服务器出错" + err,
+                    type: 'error'
+                })
+                return false;
+            })                   
+        },
         // 发送聊天内容
         sendBuffer(){
+            let requestData = {
+                username: this.userName,
+                message: this.buffer
+            };
 
+            fetch(this.URL + '/api/experiementing/' + this.ticketId + 
+                '/boarding?ticketId=' + this.ticketId, {
+                method: 'POST',
+                headers: {
+                    Authorization: 'Bearer  ' + localStorage.getItem("token"),
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestData)
+            }).then(res => res.json()).then(res => {
+                if(res.success){
+                    this.messages.push({
+                        username: this.userName,
+                        message: this.buffer
+                    });
+
+                    this.$message({
+                        message: "留言发送成功",
+                        type: 'success'
+                    })
+                    this.buffer = "";
+                }else{
+                    if (res.status === 401){
+                        this.$message({
+                            message: "登录已过期",
+                            type: 'error'
+                        })
+                    }else{
+                        this.$message({
+                            message: "未知错误" + res.status,
+                            type: 'error'
+                        })
+                    }
+                }
+            }).catch(err => {
+                this.$message({
+                    message: "加载失败，服务器出错" + err,
+                    type: 'error'
+                })
+                return false;
+            })            
+        },
+        // 动态设置视频高度
+        setVideoHeight(){
+            this.videoHeight =  (document.body.clientWidth - this.$refs.img.clientWidth) / 16 * 9;
         },
         // 改变摄像头
         changeCam(index){
             this.nowVideo = this.cams[index - 1];
+        },
+        // 显示操作框，填充缓冲区防止修改时数据随意改变
+        showControl(key){
+            if (this.options_show[key].haveData){
+                this.dataBuffer = this.options_show[key].data;
+            }
+
+            if (this.options_show[key].haveSwitch){
+                this.switchBuffer = this.options_show[key].open;
+            }
+        },
+        // 关闭操作卡，清空缓冲区
+        closeControl(key){
+            this.dataBuffer = "";
+            this.switchBuffer = "";
         },
         // 显示成员信息和聊天框
         showMember(){
@@ -276,44 +326,353 @@ export default {
             this.memberVisible = false;
             this.haveNewMsg = false; //新消息已经阅读了
         },
+        // 申请令牌
+        applyToken(){
+            fetch(this.URL + '/api/experiementing/' + this.ticketId + 
+                '/applyToken?ticketId=' + this.ticketId + 
+                "&name=" + this.userName, {
+                method: 'POST',
+                headers: {
+                    Authorization: 'Bearer  ' + localStorage.getItem("token") 
+                }
+            }).then(res => res.json()).then(res => {
+                if(res.success){
+                    this.$message({
+                        message: "已获得操作权",
+                        type: 'success'
+                    })
+                    this.nowController = this.userName;
+                    this.applyDisabled = true;
+                    this.releaseDisabled = false;
+                }else{
+                    if (res.status === 403){
+                        this.$message({
+                            message: "操作权已被占用",
+                            type: 'error'
+                        })
+                    }else if (res.status === 401){
+                        this.$message({
+                            message: "登录已过期",
+                            type: 'error'
+                        })
+                    }else{
+                        this.$message({
+                            message: "未知错误" + res.status,
+                            type: 'error'
+                        })
+                    }
+                }
+            }).catch(err => {
+                this.$message({
+                    message: "加载失败，服务器出错" + err,
+                    type: 'error'
+                })
+              return false;
+            })
+        },
+        // 释放令牌
+        releaseToken(){
+            this.$confirm('确认要释放操作权吗?', '提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+            }).then(() => {
+                fetch(this.URL + '/api/experiementing/' + this.ticketId + 
+                    '/releaseToken?ticketId=' + this.ticketId + 
+                    "&name=" + this.userName, {
+                    method: 'POST',
+                    headers: {
+                        Authorization: 'Bearer  ' + localStorage.getItem("token") 
+                    }
+                }).then(res => res.json()).then(res => {
+                    console.log(res);
+                    if(res.success){
+                        this.$message({
+                            message: "已释放操作权",
+                            type: 'success'
+                        })
+                        this.nowController = "";
+                        this.applyDisabled = false;
+                        this.releaseDisabled = true;
+                    }else{
+                        if (res.status === 500){
+                            this.$message({
+                                message: "登录已过期",
+                                type: 'error'
+                            })
+                        }else{
+                            this.$message({
+                                message: "未知错误" + res.status,
+                                type: 'error'
+                            })
+                        }
+                    }
+                }).catch(err => {
+                    this.$message({
+                        message: "加载失败，服务器出错" + err,
+                        type: 'error'
+                    })
+                    return false;
+                })
+            })
+        },
         // 修改数据
-        updateOptions(index){
+        updateOption(index){
+            let name = index + "";
+            let requestData = {
+                paramName: name.toUpperCase(),
+                paramValue: this.dataBuffer + ""
+            }
 
+            fetch(this.URL + '/api/experiementing/' + this.ticketId + 
+                '/?ticketId=' + this.ticketId +
+                '&name=' + this.userName, {
+                method: 'POST',
+                headers: {
+                    Authorization: 'Bearer  ' + localStorage.getItem("token"),
+                    'Content-Type': 'application/json' 
+                },
+                body: JSON.stringify(requestData)
+            }).then(res => res.json()).then(res => {
+                if(res.success){
+                    // 立刻刷新数据，防止跳闪
+                    this.refreshData();
+                    this.$message({
+                        message: "修改成功",
+                        type: 'success'
+                    })
+                }else{
+                    if (res.status === 401){
+                        this.$message({
+                            message: "登录已过期",
+                            type: 'error'
+                        })
+                    }else if (res.status === 601){
+                        this.$message({
+                            message: "输入值非法",
+                            type: 'error'
+                        })
+                    }else{
+                        this.$message({
+                            message: "未知错误" + res.status,
+                            type: 'error'
+                        })
+                    }
+                }
+            }).catch(err => {
+                this.$message({
+                    message: "加载失败，服务器出错" + err,
+                    type: 'error'
+                })
+                return false;
+            })     
         },
         // 修改开关状态
         updateSwitch(index){
+            let name = index + "";
+            let requestData = {
+                paramName: name.toUpperCase(),
+                paramValue: Number(!this.switchBuffer)
+            }
 
+            fetch(this.URL + '/api/experiementing/' + this.ticketId + 
+                '/?ticketId=' + this.ticketId +
+                '&name=' + this.userName, {
+                method: 'POST',
+                headers: {
+                    Authorization: 'Bearer  ' + localStorage.getItem("token"),
+                    'Content-Type': 'application/json' 
+                },
+                body: JSON.stringify(requestData)
+            }).then(res => res.json()).then(res => {
+                if(res.success){
+                    // 立刻刷新数据，防止跳闪
+                    this.refreshData();
+                    this.$message({
+                        message: "修改成功",
+                        type: 'success'
+                    })
+                }else{
+                    if (res.status === 401){
+                        this.$message({
+                            message: "登录已过期",
+                            type: 'error'
+                        })
+                    }else{
+                        this.$message({
+                            message: "未知错误" + res.status,
+                            type: 'error'
+                        })
+                    }
+                }
+            }).catch(err => {
+                this.$message({
+                    message: "加载失败，服务器出错" + err,
+                    type: 'error'
+                })
+                return false;
+            })
+        },
+        // 刷新成员列表
+        refreshMember(){
+            fetch(this.URL + '/api/experiementing/' + this.ticketId + 
+                '/getStudents?ticketId=' + this.ticketId, {
+                method: 'GET',
+                headers: {
+                    Authorization: 'Bearer  ' + localStorage.getItem("token") 
+                }
+            }).then(res => res.json()).then(res => {
+                if(res.success){
+                    let data = res.data;
+                    this.members = data;
+                }else{
+                    if (res.status === 401){
+                        this.$message({
+                            message: "登录已过期",
+                            type: 'error'
+                        })
+                    }else{
+                        this.$message({
+                            message: "未知错误" + res.status,
+                            type: 'error'
+                        })
+                    }
+                }
+            }).catch(err => {
+                this.$message({
+                    message: "加载失败，服务器出错" + err,
+                    type: 'error'
+                })
+                return false;
+            })            
+        },
+        // 刷新数据列表
+        refreshData(){
+            fetch(this.URL + '/api/experiementing/' + this.ticketId + 
+                '/?ticketId=' + this.ticketId, {
+                method: 'GET',
+                headers: {
+                    Authorization: 'Bearer  ' + localStorage.getItem("token") 
+                }
+            }).then(res => res.json()).then(res => {
+                if(res.success){
+                    let newData = res.data.param;
+                    let nowToken = res.data.token;
+
+                    //更新当前操作者状态
+                    this.nowController = nowToken;
+                    if (this.nowController === this.userName){
+                        this.applyDisabled = true;
+                        this.releaseDisabled = false;
+                    }else{
+                        this.applyDisabled = false;
+                        this.releaseDisabled = true;
+                    }
+
+                    // 更新数据
+                    this.options_show["f1"].data = newData["f1"];
+                    this.options_show['fxbkg'].open = Boolean(newData['fxbkg']);
+                }else{
+                    if (res.status === 401){
+                        this.$message({
+                            message: "登录已过期",
+                            type: 'error'
+                        })
+                    }else{
+                        this.$message({
+                            message: "未知错误" + res.status,
+                            type: 'error'
+                        })
+                    }
+                }
+            }).catch(err => {
+                this.$message({
+                    message: "加载失败，服务器出错" + err,
+                    type: 'error'
+                })
+                return false;
+            })                   
+        },
+        // 刷新留言板信息
+        refreshMsg(){
+            fetch(this.URL + '/api/experiementing/' + this.ticketId + 
+                '/boarding?ticketId=' + this.ticketId, {
+                method: 'GET',
+                headers: {
+                    Authorization: 'Bearer  ' + localStorage.getItem("token") 
+                }
+            }).then(res => res.json()).then(res => {
+                if(res.success){
+                    let data = res.data;
+                    if (this.messages.length !== data.length){
+                        this.haveNewMsg = true;
+                    }
+                    this.messages = data;
+                }else{
+                    if (res.status === 401){
+                        this.$message({
+                            message: "登录已过期",
+                            type: 'error'
+                        })
+                    }else{
+                        this.$message({
+                            message: "未知错误" + res.status,
+                            type: 'error'
+                        })
+                    }
+                }
+            }).catch(err => {
+                this.$message({
+                    message: "加载失败，服务器出错" + err,
+                    type: 'error'
+                })
+                return false;
+            })
+        },
+        // 退出实验
+        exit(){
+           this.$confirm('确认退出实验吗?', '提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+            }).then(() => {
+                this.$router.replace("/index");
+            }) 
+        },
+        // 监听浏览器关闭事件
+        beforeunloadHandler(e){
+            e = e || window.event
+            if (e) {
+                e.returnValue = '关闭提示'
+            }
+            // debugger
+            return '关闭提示'
         }
     },
     mounted() {
+        window.addEventListener('beforeunload', e => this.beforeunloadHandler(e));
         this.nowVideo = this.cams[0];
-        console.log(this.$refs.video.clientWidth);
-        this.videoHeight = this.$refs.video.clientWidth / 16 * 9;
-        console.log(this.videoHeight);
+        localStorage.setItem("token", "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiIyMDIxMjQ0MTIyIiwiY3JlYXRlZCI6MTYzODc1OTA5NDQ4NSwiZXhwIjoxNjM5MzYzODk0fQ.kNiXuMhJXNE4XLarBODO3qILY-8mqjAReWqZNFZu98pmT4Cl5shwBVu_WE0LnLDVNifiqed70epBKaDd0dN97A")
 
-        /* 获取播放器元素 */
-        // var player = document.getElementById('ysOpenDevice').contentWindow;
-        // player.postMessage("play", "https://open.ys7.com/ezopen/h5/iframe") /* 播放 */
-        // player.postMessage("stop", "https://open.ys7.com/ezopen/h5/iframe") /* 结束 */
-        // player.postMessage("capturePicture", "https://open.ys7.com/ezopen/h5/iframe") /* 截图 */
-        // player.postMessage("openSound", "https://open.ys7.com/ezopen/h5/iframe") /* 开启声音 */
-        // player.postMessage("closeSound", "https://open.ys7.com/ezopen/h5/iframe") /* 关闭声音 */
-        // player.postMessage("startSave", "https://open.ys7.com/ezopen/h5/iframe") /* 开始录制 */
-        // player.postMessage("stopSave", "https://open.ys7.com/ezopen/h5/iframe") /* 结束录制 */
+        //初始获取数据
+        this.getEndTime();
+        this.refreshMsg();
+        this.refreshData();
 
-        // this.playr = new EZUIKit.EZUIKitPlayer({
-        //     id: "ysopen", // 视频容器ID
-        //     accessToken: "at.0dcgegun62wxel9acx52q6pn9s1kzef4-6ezinbbeqy-1kli1yl-uwrzaibo5",
-        //     url: "ezopen://open.ys7.com/C78957921/1.live",
-        //     template: 'theme',//
-        //     autoplay: true,
-        //     plugin: ['talk'],// 加载插件，talk-对讲
-        //     startTalk:()=> this.playr.startTalk(),
-        //     stopTalk: ()=> this.playr.stopTalk(),
-        //     width: 600,
-        //     height:400,
-        // });
+
+        // 循环刷新数据ing...
+        // setInerval直接使用会卡死
+        window.setInterval(() => {
+            setTimeout(this.refreshMsg, 0)
+        }, 5000);
+
+        window.setInterval(() => {
+            setTimeout(this.refreshData, 0)
+        }, 1000);
     },
+    destroyed(){
+        window.removeEventListener('beforeunload', e => this.stopExit(e));
+    }
 }
 </script>
 
@@ -326,6 +685,7 @@ export default {
     height: 100%;
     box-sizing: border-box;
     display: flex;
+    justify-content: space-between;
 }
 
 .img_block{
@@ -344,6 +704,7 @@ export default {
     height: 100%;
     padding-right: 30px;
     position: relative;
+    width: 100%;
 }
 
 #ysopen, .ex_title, .ex_bottom{
@@ -480,7 +841,7 @@ export default {
 .control_show{
     font-weight: bold;
     color: #F56C6C;
-    font-size: 24px;
+    font-size: 20px;
     display: flex;
     align-items: center;
     position: absolute;
@@ -514,7 +875,7 @@ export default {
     left: 84%;
 }
 
-#fenxi{
+#fxbkg{
     top: 45%;
     left: 22%;
 }
@@ -529,8 +890,8 @@ export default {
     left: 16.3%;
 }
 
-#co2{
-    top: 29.5%;
+#f1{
+    top: 27%;
     left: 3.5%;
 }
 

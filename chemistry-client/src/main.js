@@ -7,15 +7,14 @@ import ElementUI from 'element-ui'
 import 'element-ui/lib/theme-chalk/index.css'
 
 const URL = "http://localhost:8080";
-// var userType = true;
-var userType = false;
+var userType = true;
 
 Vue.config.productionTip = false;
 Vue.use(ElementUI);
 Vue.prototype.URL = URL;
 Vue.prototype.PUBLICKEY = "";
 Vue.prototype.userType = userType;
-Vue.prototype.userName = "default";
+Vue.prototype.userName = "2021244122";
 
 /* eslint-disable no-new */
 new Vue({
