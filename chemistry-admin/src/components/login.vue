@@ -7,6 +7,10 @@
             <div class="title">管理后台</div>
             <div class="form_block">
                 <el-form ref="form" :model="form" :rules="rules">
+                  <div class="el_title">用户名：</div>
+                  <el-form-item  prop="username">
+                      <el-input v-model="form.username" clearable></el-input>
+                  </el-form-item>
                   <div class="el_title">密码：</div>
                   <el-form-item  prop="password">
                       <el-input v-model="form.password" clearable show-password></el-input>
@@ -21,13 +25,13 @@
 </template>
 
 <script>
-import JSEncrypt from 'jsencrypt'
 export default {
     name: 'login',
     data(){
         return {
             isDisabled: false,
             form: {
+                username: "",
                 password: ""
             },
             rules: {
@@ -40,51 +44,54 @@ export default {
     methods: {
       onSubmit(formName){
         let that = this;
-
-        //加密
-        let encryptor = new JSEncrypt()
-        encryptor.setPublicKey(that.PUBLICKEY);
-        let encrypassword = encryptor.encrypt(this.form.password);
-
-
-
-        let request = new FormData();
-        request.append("username", "admin");
-        request.append("password", encrypassword);
-
+        let request = this.form;
 
         this.$refs[formName].validate((valid) => {
-          if (valid) {
-            fetch(that.URL + 'login', {
-              method: 'POST',
-              body: request
-            }).then(res => res.json()).then(res => {
-              console.log(res);
-              if (res.status === "succeed"){
-                let token = res.message;
-                localStorage.setItem("token", token);
-                
-                that.$message({
-                  message: "登录成功",
-                  type: 'success'
-                })
-                that.$router.push("/index");
-              }else{
-                that.$message({
-                  message: "用户名与密码错误",
-                  type: 'error'
-                })
-              }
-            }).catch(err => {
-              that.$message({
-                message: "登录失败，服务器出错",
-                type: 'error'
-              })
-            })
-          }else{
-            console.log("error");
-            return false;
-          }
+          	if (valid) {
+				fetch(this.URL + "api/auth/login", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(request)
+                }).then(res => res.json()).then(res => {
+                    if (res.success){
+                        if (res.data.Role === "ROLE_admin"){
+                            localStorage.setItem("token", res.data.token);
+                            this.$message({
+                                message: "登录成功",
+                                type: 'success'
+                            })
+                            this.$router.push("/index");
+                        }else{
+                            this.$message({
+                                message: "无效的用户类型",
+                                type: 'error'
+                            })
+                        }
+                    }else{
+                        if (res.status === 403){
+                            this.$message({
+                                message: "用户名或密码错误",
+                                type: 'error'
+                            })
+                        }else{
+                            this.$message({
+                                message: "未知错误" + res.status,
+                                type: 'error'
+                            })
+                        }
+                    }
+                }).catch(err => {
+                    this.$message({
+                        message: "加载失败，服务器出错" + err,
+                        type: 'error'
+                    })
+                    return false;
+                });  
+          	}else{
+            	return false;
+          	}
         })
       }
     }

@@ -84,6 +84,7 @@ export default {
 
 .container{
     height: 100%;
+    overflow-y: auto;
 }
 
 .aside{

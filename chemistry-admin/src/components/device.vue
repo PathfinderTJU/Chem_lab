@@ -42,40 +42,29 @@
         <el-form-item label="设备名称" prop="name">
           <el-input v-model="addForm.name" maxLength="20"></el-input>
         </el-form-item>
+		<el-form-item label="摄像头URL" prop="url">
+          <el-input v-model="addForm.url"></el-input>
+        </el-form-item>
         <div class="add_footer">
-          <el-button type="primary" @click="addSubmit('addForm')" :disabled="isDisabled">确定</el-button>
+          <el-button type="primary" @click="addSubmit('addForm')">确定</el-button>
           <el-button @click="addCancel">取消</el-button>
         </div>
       </el-form>
     </el-dialog>
-    <!-- 编辑弹窗
-    <el-dialog title="编辑用户信息" :visible.sync="editFormVisible" @close="closeDialog('editForm')">
-      <el-form ref="editForm" :model="editForm" label-width="100px" label-position="left" :rules="editRules" v-loading="isLoading">
+    <!-- 编辑弹窗 -->
+	<!-- <el-dialog title="编辑设备" :visible.sync="editFormVisible" @close="closeDialog('editForm')">
+      <el-form ref="editForm" :model="editForm" label-width="100px" label-position="left" :rules="addRules" v-loading="isLoading">
         <el-form-item label="设备类型" prop="type">
-          <el-select v-model="editForm.type">
-            <el-option v-for="item in types" :key="item.value" :label="item.label" :value="item.value"></el-option>
-          </el-select>
+          <div>{{this.types[editForm.type].label}}</div>
         </el-form-item>
-        <el-form-item label="用户名" prop="username">
-          <el-input v-model="editForm.username" maxLength="20"></el-input>
+        <el-form-item label="设备名称" prop="name">
+          <div>{{editForm.name}}</div>
         </el-form-item>
-        <el-form-item label="手机号" prop="tel">
-          <el-input v-model.number="editForm.tel" maxLength="11"></el-input>
-        </el-form-item>
-        <el-form-item label="邮箱" prop="email">
-          <el-input v-model="editForm.email" maxLength="50"></el-input>
-        </el-form-item>
-        <el-form-item label="逻辑班号" v-if="editForm.type === 0" prop="class">
-          <el-input v-model.number="editForm.class" ></el-input>
-        </el-form-item>
-        <el-form-item label="新密码" prop="password">
-          <el-input v-model="editForm.password" maxLength="20" type="password"></el-input>
-        </el-form-item>
-        <el-form-item label="确认密码" prop="confirm">
-          <el-input v-model="editForm.confirm" maxLength="20" type="password"></el-input>
+		<el-form-item label="摄像头URL" prop="url">
+          <el-input v-model="editForm.url"></el-input>
         </el-form-item>
         <div class="add_footer">
-          <el-button type="primary" @click="editSubmit('editForm')" :disabled="isDisabled">确定</el-button>
+          <el-button type="primary" @click="editSubmit('editForm')">确定</el-button>
           <el-button @click="editCancel">取消</el-button>
         </div>
       </el-form>
@@ -102,21 +91,11 @@ export default {
           name: "精馏设备1", 
           type:0,
           type_show: "精馏",
-          param: [
-            {
-              key: "温度",
-              value: "36°C"
-            },
-            {
-              key: "容积",
-              value: "5000ml"
-            }
-          ]
         }
       ], //用户数据
       addFormVisible: false, //控制增加弹窗
       editFormVisible: false, //控制编辑弹窗
-      nowType: 0, //当前设备类型
+      nowType: "", //当前设备类型
       types: [ //设备类型
         {value: 0, label: "精馏"},
         {value: 1, label: "吸收-解吸"},
@@ -137,32 +116,19 @@ export default {
         name: [
           {required: true, message: "请输入设备名", trigger: 'blur'}
         ],
-        ip: [
-          {required: true, message: "请输入IP地址", trigger: 'blur'}
+        url: [
+          {required: true, message: "请输入摄像头地址", trigger: 'blur'}
         ]
       },
-      // editRules: { //编辑表单的完整性检查规则
-      //   username: [
-      //     {required: true, message: "请输入用户名", trigger: 'blur'}
-      //   ],
-      //   password: [
-      //     {min: 6, message: "密码长度不能少于6位", trigger: 'blur'}
-      //   ],
-      //   confirm:[
-      //     {validator: editConfirmPasswordRule, trigger: 'blur'}
-      //   ],
-      //   tel: [
-      //     {required: true, message: "请输入11位手机号码", trigger: 'blur'},
-      //     {min:11, type: 'number', message: "请输入正确的手机号码", trigger: 'blur'}
-      //   ],
-      //   email: [
-      //     {required: true, message: "请输入邮箱", trigger: 'blur'},
-      //     {type: 'email', message: "请输入正确的邮箱", trigger: 'blur'}
-      //   ],
-      //   class: [
-      //     {required: true, message: "请输入逻辑班号", trigger: 'blur'}
-      //   ]
-      // }
+	  editRules: { //新增表单的完整性检查规则
+        name: [
+          {required: true, message: "请输入设备名", trigger: 'blur'}
+        ],
+        url: [
+          {required: true, message: "请输入摄像头地址", trigger: 'blur'}
+        ]
+      },
+	
     }
   },
   methods: {
@@ -266,7 +232,7 @@ export default {
     openEdit(scope){
       //填充数据
       let index = scope.$index;
-      this.editForm = JSON.parse(JSON.stringify(this.accountData[index]));
+      this.editForm = JSON.parse(JSON.stringify(this.deviceData[index]));
 
       this.updateIndex = index;
       this.editFormVisible = true;

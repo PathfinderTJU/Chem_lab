@@ -17,13 +17,13 @@
                 <el-table-column prop="name" label="名称"></el-table-column>
                 <el-table-column v-for="(item, index) in time" :key="item.value" :prop="item.plan" :label="item.label + '\n' + item.start + '-' + item.end" :index="index">
                     <template slot-scope="scope">
-                        <el-switch :disabled="scope.row.id < 2 || isDisabled" v-model="scope.row.plan[item.value]" @change="changePlan"></el-switch>
+                        <el-switch :disabled="scope.row.id <= 2 || isDisabled" v-model="scope.row.items[item.value]" @change="changePlan(scope)"></el-switch>
                     </template>
                 </el-table-column>
                 <el-table-column label="操作">
                     <template slot-scope="scope">
-                        <el-button v-if="scope.row.id > 1" type="text" size="small" @click="openEdit(scope)">编辑</el-button>
-                        <template v-if="scope.row.id > 1">
+                        <el-button v-if="scope.row.id > 2" type="text" size="small" @click="openEdit(scope)">编辑</el-button>
+                        <template v-if="scope.row.id > 2">
                             <el-popconfirm title="确定删除吗?" @confirm="deleteData(scope)">
                                 <el-button type="text" size="small" slot="reference">删除</el-button>
                             </el-popconfirm>
@@ -36,7 +36,7 @@
         <!-- 编辑名称弹窗 -->
         <el-dialog title="编辑名称" :visible.sync="editFormVisible" @close="closeDialog('editForm')">
             <el-form ref="editForm" :model="editForm" label-width="100px" label-position="left" :rules="editRules" v-loading="isLoading">
-                <el-form-item label="用户名" prop="name">
+                <el-form-item label="计划名称" prop="name">
                     <el-input v-model="editForm.name" maxLength="20"></el-input>
                 </el-form-item>
                     <div class="add_footer">
@@ -119,29 +119,7 @@ export default {
         };
         
         return{
-            planData: [
-                // 【数据结构】日开放计划数据
-                // {
-                //   name：string
-                //   plan: boolean array(10)
-                // }
-                {
-                    id: 0,
-                    name: "全天开放",
-                    plan: [true, true, true, true, true, true, true, true, true, true]
-                },
-                {
-                    id: 1,
-                    name: "不开放",
-                    plan: [false, false, false, false, false, false, false, false, false, false]
-                }
-                ,
-                {
-                    id: 2,
-                    name: "晚上开放",
-                    plan: [false, false, false, false, false, true, true, true, true, true]
-                }
-            ],
+            planData: [],
             time: [
                 {value: 0, label:"第一节", start:"8:30", end:"10:00"},
                 {value: 1, label:"第二节", start:"10:25", end:"11:55"},
@@ -195,56 +173,141 @@ export default {
             if (name === ""){
                 return false;
             }
-            
-            // 拼接请求数据结构
-            let request = {};
-            request.name = name;
-            request.items = new Array(10);
-            for (let i = 0 ; i < 10 ; i++){
-                request.items.push(false);
-            }
 
-            // 网络请求
+            let request = {
+                name: name,
+                items: [false, false, false, false, false, false, false]
+            }
+            
             fetch(this.URL + "api/daily-open-plans/", {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    Authorization: 'Bearer  ' + localStorage.getItem("token"),
+                    'content-type': 'application/json'
                 },
                 body: JSON.stringify(request)
-            }).then(res => {
-                if (res.status === 200){
-                    return res.json();
-                }else if (res.status === 401){
-                    return Promise.reject(0);
+            }).then(res => res.json()).then(res => {
+                if (res.success){
+                    this.refreshData();
+                    this.$message({
+                        message: "添加成功",
+                        type: 'success'
+                    })
                 }else{
-                    return Promise.reject(res.status);
+                    if (res.status === 402){
+                        this.$message({
+                            message: "登录已过期",
+                            type: 'error'
+                        })
+                        this.$router.push("/login");
+                    }else if(res.status === 401){
+                        this.$message({
+                            message: "没有相关权限",
+                            type: 'error'
+                        })
+                    }else{
+                        this.$message({
+                            message: "未知错误" + res.status,
+                            type: 'error'
+                        })
+                    }
                 }
-            }).then(res => {
-                console.log(res);
-            }).catch(code => {
-                if (code === 0){ // 登录验证过期
-                    that.$message({
-                    message: "登录已过期，请重新登录",
+            }).catch(err => {
+                this.$message({
+                    message: "加载失败，服务器出错" + err,
                     type: 'error'
-                    })
-                    that.$router.push("/login");
-                    return false;
-                }else {
-                    that.$message({
-                    message: "未知错误，错误码：" + code,
-                    type: 'error'
-                    })
-                    return false;
-                } 
+                })
+                return false;
             })
         },
         // 修改日开放计划
-        changePlan(){
-            this.isDisabled = true;
+        changePlan(scope){
+            let id = this.planData[scope.$index].id; //计划id
+            let sn = scope.column.index; //第几节课，从0开始，0-6
+            let nowValue = this.planData[scope.$index].items[sn];
+            let type = nowValue ? 'PUT' : 'DELETE';
+
+            fetch(this.URL + "api/daily-open-plans/" + id + "/items/" + sn 
+                    + "?id=" + id + "&sn=" + sn, {
+                method: type,
+                headers: {
+                    Authorization: 'Bearer  ' + localStorage.getItem("token")
+                }
+            }).then(res => res.json()).then(res => {
+                if (res.success){
+                    this.$message({
+                        message: "修改成功",
+                        type: 'success'
+                    })
+                }else{
+                    if (res.status === 402){
+                        this.$message({
+                            message: "登录已过期",
+                            type: 'error'
+                        })
+                        this.$router.push("/login");
+                    }else if(res.status === 401){
+                        this.$message({
+                            message: "没有相关权限",
+                            type: 'error'
+                        })
+                    }else{
+                        this.$message({
+                            message: "未知错误" + res.status,
+                            type: 'error'
+                        })
+                    }
+                }
+            }).catch(err => {
+                this.$message({
+                    message: "加载失败，服务器出错" + err,
+                    type: 'error'
+                })
+                return false;
+            })
         },
         // 删除日开放计划
         deleteData(scope){
             let id = scope.row.id;
+
+            fetch(this.URL + "api/daily-open-plans/" + id + "?id=" + id, {
+                method: 'DELETE',
+                headers: {
+                    Authorization: 'Bearer  ' + localStorage.getItem("token")
+                }
+            }).then(res => res.json()).then(res => {
+                if (res.success){
+                    this.refreshData();
+                    this.$message({
+                        message: "删除成功",
+                        type: 'success'
+                    })
+                }else{
+                    if (res.status === 402){
+                        this.$message({
+                            message: "登录已过期",
+                            type: 'error'
+                        })
+                        this.$router.push("/login");
+                    }else if(res.status === 401){
+                        this.$message({
+                            message: "没有相关权限",
+                            type: 'error'
+                        })
+                    }else{
+                        this.$message({
+                            message: "未知错误" + res.status,
+                            type: 'error'
+                        })
+                    }
+                }
+            }).catch(err => {
+                this.$message({
+                    message: "加载失败，服务器出错" + err,
+                    type: 'error'
+                })
+                return false;
+            })
         },
         // 向编辑表单中填充数据
         openEdit(scope){
@@ -257,22 +320,74 @@ export default {
         editSubmit(formName){
             //禁用按钮
             this.isDisabled = true;
+            this.isLoading = true;
             let that = this;
-            let data = this.editForm;
+            let requestData = this.editForm;
+            let id = requestData.id;
 
             this.$refs[formName].validate((valid) => {
                 if (valid) { //验证通过
-                //恢复按钮
-                that.isDisabled = false;
-                //停止加载
-                that.isLoading = false;
-                //关闭表单
-                that.editFormVisible = false; 
+                    fetch(this.URL + "api/daily-open-plans/" + id, {
+                        method: 'PUT',
+                        headers: {
+                            Authorization: 'Bearer  ' + localStorage.getItem("token"),
+                            'content-type': 'application/json'
+                        },
+                        body: JSON.stringify(requestData)
+                    }).then(res => res.json()).then(res => {
 
+                        //恢复按钮
+                        that.isDisabled = false;
+                        //停止加载
+                        that.isLoading = false;
+
+                        if (res.success){
+                            this.refreshData();
+                            this.$message({
+                                message: "修改成功",
+                                type: 'success'
+                            })
+                                    
+                            //关闭表单
+                            that.editFormVisible = false; 
+                        }else{
+                            if (res.status === 402){
+                                this.$message({
+                                    message: "登录已过期",
+                                    type: 'error'
+                                })
+                                this.$router.push("/login");
+                            }else if(res.status === 401){
+                                this.$message({
+                                    message: "没有相关权限",
+                                    type: 'error'
+                                })
+                            }else{
+                                this.$message({
+                                    message: "未知错误" + res.status,
+                                    type: 'error'
+                                })
+                            }
+                        }
+                    }).catch(err => {
+                        //恢复按钮
+                        that.isDisabled = false;
+                        //停止加载
+                        that.isLoading = false;
+
+                        this.$message({
+                            message: "修改失败，服务器出错" + err,
+                            type: 'error'
+                        })
+                        return false;
+                    })
                 } else {
-                //恢复按钮
-                that.isDisabled = false;
-                return false;
+                    //恢复按钮
+                    that.isDisabled = false;
+                    //停止加载
+                    that.isLoading = false;
+
+                    return false;
                 }
             })
         },
@@ -287,6 +402,7 @@ export default {
             this.timeFormVisible = true;
             this.timeForm = JSON.parse(JSON.stringify(this.time[index]));
         },
+        // 未完成，等接口
         // 提交修改时间表单
         timeSubmit(formName){
             //禁用按钮
@@ -315,36 +431,46 @@ export default {
             this.timeFormVisible = false;
             this.$refs["timeForm"].resetFields();
         },  
+        // 刷新页面数据
+        refreshData(){
+            fetch(this.URL + "api/daily-open-plans/", {
+                method: 'GET',
+                headers: {
+                    Authorization: 'Bearer  ' + localStorage.getItem("token") 
+                }
+            }).then(res => res.json()).then(res => {
+                if (res.success){
+                    this.planData = res.data;
+                }else{
+                    if (res.status === 402){
+                        this.$message({
+                            message: "登录已过期",
+                            type: 'error'
+                        })
+                        this.$router.push("/login");
+                    }else if(res.status === 401){
+                        this.$message({
+                            message: "没有相关权限",
+                            type: 'error'
+                        })
+                    }else{
+                        this.$message({
+                            message: "未知错误" + res.status,
+                            type: 'error'
+                        })
+                    }
+                }
+            }).catch(err => {
+                this.$message({
+                    message: "加载失败，服务器出错" + err,
+                    type: 'error'
+                })
+                return false;
+            });
+        }
     },
-    created() {
-        let that = this;
-
-        fetch(this.URL + "api/daily-open-plans/").then(res => {
-            if (res.status === 200){
-                return res.json();
-            }else if (res.status === 401){
-                return Promise.reject(0);
-            }else{
-                return Promise.reject(res.status);
-            }
-        }).then(res => {
-            console.log(res); 
-        }).catch(code => {
-            if (code === 0){ // 登录验证过期
-                that.$message({
-                  message: "登录已过期，请重新登录",
-                  type: 'error'
-                })
-                that.$router.push("/login");
-                return false;
-            }else {
-                that.$message({
-                  message: "未知错误，错误码：" + code,
-                  type: 'error'
-                })
-                return false;
-            } 
-        })
+    mounted() {
+        this.refreshData();        
     },
 }
 </script>

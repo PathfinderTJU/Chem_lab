@@ -16,7 +16,7 @@
                     <div v-if="value.haveSwitch">
                         <el-switch v-model.lazy="value.open" active-text="打开" inactive-text="关闭" @change="updateSwitch(key)" :disabled="releaseDisabled"></el-switch>
                     </div>
-                <i style="padding-left: 5px;color:#E6A23C;cursor:pointer;" class="el-icon-s-tools" slot="reference"></i>
+                <i :style="{color:switchColor}" style="padding-left: 5px;font-size:30px;cursor:pointer;}" class="el-icon-s-tools" slot="reference"></i>
                 </el-popover>
             </span>
         </div>
@@ -25,14 +25,14 @@
             <div class="ex_title">吸收-解吸实验</div>
             <div class="ex_time">实验结束时间：<span style="font-weight:bold;color: #409EFF">{{endTime}}</span></div>
             <!-- 摄像头 -->
-            <iframe :src="nowVideo.url" id="ysopen" ref="video" :style="{height:videoHeight + 'px'}"></iframe>
+            <iframe :src="nowVideo.url" id="ysopen" ref="video" :style="{height:videoHeight + 'px'}" allowfullscreen></iframe>
             <el-pagination id="video_change_button" small layout="prev, pager, next" :total="40" @current-change="changeCam"></el-pagination>
             <!-- 控制模块 -->
             <div class="control_block">
                 <div id="now_controller">
                     <span>当前操作者：{{nowController}}</span>
                     <el-badge :is-dot="haveNewMsg" class="item">
-                        <el-button type="text" @click="showMember">成员信息</el-button>
+                        <el-button type="text" @click="showMember">成员和聊天</el-button>
                     </el-badge>
                 </div>
                 <el-button class="control_button" type="primary" @click="applyToken" :disabled="applyDisabled">申请操作</el-button>
@@ -110,6 +110,7 @@ export default {
             nowController: "", //当前操作者
             applyDisabled: false, //申请令牌禁用
             releaseDisabled: true, //释放令牌禁用
+            switchColor: "#E6A23C",
             options_show: {
                 "lixin1": {
                     id: 1,
@@ -209,7 +210,8 @@ export default {
             dataBuffer: "", //数据区缓存
             switchBuffer: "", //开关区缓存
             messages: [], //聊天记录数据
-            haveNewMsg: false //聊天区是否有新消息
+            yemianHeight: 0,
+            haveNewMsg: false //聊天区是否有新消息,
         }
     },
     methods: {
@@ -226,7 +228,7 @@ export default {
                     let data = res.data;
                     this.endTime = data;
                 }else{
-                    if (res.status === 401){
+                    if (res.status === 402){
                         this.$message({
                             message: "登录已过期",
                             type: 'error'
@@ -274,7 +276,7 @@ export default {
                     })
                     this.buffer = "";
                 }else{
-                    if (res.status === 401){
+                    if (res.status === 402){
                         this.$message({
                             message: "登录已过期",
                             type: 'error'
@@ -350,7 +352,7 @@ export default {
                             message: "操作权已被占用",
                             type: 'error'
                         })
-                    }else if (res.status === 401){
+                    }else if (res.status === 402){
                         this.$message({
                             message: "登录已过期",
                             type: 'error'
@@ -442,7 +444,7 @@ export default {
                         type: 'success'
                     })
                 }else{
-                    if (res.status === 401){
+                    if (res.status === 402){
                         this.$message({
                             message: "登录已过期",
                             type: 'error'
@@ -493,7 +495,7 @@ export default {
                         type: 'success'
                     })
                 }else{
-                    if (res.status === 401){
+                    if (res.status === 402){
                         this.$message({
                             message: "登录已过期",
                             type: 'error'
@@ -526,7 +528,7 @@ export default {
                     let data = res.data;
                     this.members = data;
                 }else{
-                    if (res.status === 401){
+                    if (res.status === 402){
                         this.$message({
                             message: "登录已过期",
                             type: 'error'
@@ -573,7 +575,7 @@ export default {
                     this.options_show["f1"].data = newData["f1"];
                     this.options_show['fxbkg'].open = Boolean(newData['fxbkg']);
                 }else{
-                    if (res.status === 401){
+                    if (res.status === 402){
                         this.$message({
                             message: "登录已过期",
                             type: 'error'
@@ -609,7 +611,7 @@ export default {
                     }
                     this.messages = data;
                 }else{
-                    if (res.status === 401){
+                    if (res.status === 402){
                         this.$message({
                             message: "登录已过期",
                             type: 'error'
@@ -641,6 +643,12 @@ export default {
         },
         // 监听浏览器关闭事件
         beforeunloadHandler(e){
+            if (this.nowController === this.userName){
+                this.$message({
+                    message: "请释放操作权再离开！！！",
+                    type: 'error'
+                })
+            }
             e = e || window.event
             if (e) {
                 e.returnValue = '关闭提示'
@@ -686,6 +694,7 @@ export default {
     box-sizing: border-box;
     display: flex;
     justify-content: space-between;
+    transition: all .4s;
 }
 
 .img_block{
@@ -916,6 +925,7 @@ export default {
 }
 
 /* 数据位置 */
+
 .param_show{
     font-weight: bold;
     color: #409EFF;

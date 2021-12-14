@@ -16,15 +16,17 @@
                 <el-form-item label="选择时间与计划" prop="date">
                     <el-date-picker v-model="addForm.date" type="daterange" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期"></el-date-picker>
                 </el-form-item>
-                <el-table :data="plans" height="100%" border>
-                    <el-table-column v-for="(item, index) in weekdays" :key="item" prop="dailyPlans[index]" :label="item">
-                        <template slot-scope="scope">
-                            <el-select v-model="scope.row.dailyPlans[index]">
-                                <el-option v-for="plan in planData" :key="plan.name" :label="plan.name" :value="plan.id"></el-option>
-                            </el-select>
-                        </template>
-                    </el-table-column>
-                </el-table>
+                <el-form-item prop="plan">
+                    <el-table :data="plans" height="100%" border>
+                        <el-table-column v-for="(item, index) in weekdays" :key="item" prop="dailyPlans[index]" :label="item">
+                            <template slot-scope="scope">
+                                <el-select v-model="scope.row.dailyPlans[index]">
+                                    <el-option v-for="plan in planData" :key="plan.name" :label="plan.name" :value="plan.id"></el-option>
+                                </el-select>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                </el-form-item>
                 <div class="add_footer">
                     <el-button type="primary" @click="submit('addForm')" :disabled="isDisabled">确定</el-button>
                 </div>
@@ -37,6 +39,19 @@
 export default {
     name: "plan_edit",
     data(){
+        // 计划完整性检查函数
+        var planRule =  (rule, value, callback) => {
+            let temp = this.plans[0].dailyPlans;
+            for (let i = 0 ; i < temp.length ; i++){
+                if (temp[i] === ""){
+                    callback(new Error('请选择完整的开放计划'));
+                    break;
+                }
+            }
+    
+            callback();
+        };
+
         return{
             deviceData: [
                 {
@@ -58,21 +73,7 @@ export default {
                     param: []
                 }
             ], // 设备信息
-            planData: [
-                {
-                    id: 0,
-                    name: "全天开放",
-                    plan: [true, true, true, true, true, true, true, true, true, true]
-                },{
-                    id: 1,
-                    name: "不开放",
-                    plan: [false, false, false, false, false, false, false, false, false, false]
-                },{
-                    id: 2,
-                    name: "晚上开放",
-                    plan: [false, false, false, false, false, true, true, true, true, true]
-                }
-            ], // 开放计划信息
+            planData: [], // 开放计划信息
             types: ["精馏", "吸收-解吸", "化工传热", "流动过程"], //设备类型显示字符
             weekdays: ["星期一","星期二","星期三","星期四","星期五","星期六","星期日"], //星期显示字符
             addForm: { // 表单
@@ -89,10 +90,14 @@ export default {
                 ],
                 date: [
                     {required: true, message: "请选择时间段", trigger: 'blur'}
+                ],
+                plan: [
+                    {validator: planRule, trigger: 'blur'},
+                    {message: "请选择计划", trigger: 'blur'}
                 ]
             },
             plans: [{
-                dailyPlans: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                dailyPlans: ["", "", "", "", "", "", ""]
             }] // 表格内存储每日开放计划的数据
         }
     },
@@ -128,28 +133,80 @@ export default {
                 this.isIndeterminate = true;
             }
         },
-        // 提交
+        // 提交 
         submit(formName){
+            let that = this;
+
             //禁用按钮
             this.isDisabled = true;
-            let that = this;
+            this.isLoading = true;
+
             let data = this.addForm;
+            let requestData = {
+                startDate: data.date[0].toLocaleDateString().replaceAll("/", "-"),
+                endDate: data.date[1].toLocaleDateString().replaceAll("/", "-"),
+                resourceIds: data.devices,
+                dailyOpenPlanIds: this.plans[0].dailyPlans
+            }
 
             //判断合法输入
             this.$refs[formName].validate((valid) => {
-                if (valid) { //验证通过
-                    that.isLoading = true;
-                    that.isDisabled = true;
+                if (valid) { 
+                    fetch(this.URL + "api/tickets/by-weeks", {
+                        method: 'POST',
+                        headers: {
+                            Authorization: 'Bearer  ' + localStorage.getItem("token"),
+                            'content-type': 'application/json'
+                        },
+                        body: JSON.stringify(requestData)
+                    }).then(res => res.json()).then(res => {
+                        //恢复按钮
+                        that.isDisabled = false;
+                        //停止加载
+                        that.isLoading = false;
 
-                    //恢复按钮
-                    that.isDisabled = false;
-                    //停止加载
-                    that.isLoading = false;
+                        if (res.success){
+                            this.$message({
+                                message: "开放时段添加成功",
+                                type: 'success'
+                            })
 
-                    // 恢复表单状态
-                    this.$refs["addForm"].resetFields();
-                    this.isIndeterminate = false;
-                    this.checkAll = false;
+                            // 恢复表单状态
+                            this.$refs["addForm"].resetFields();
+                            this.plans[0].dailyPlans = ["", "", "", "", "", "", ""];
+                            this.isIndeterminate = false;
+                            this.checkAll = false;
+                        }else{
+                            if (res.status === 402){
+                                this.$message({
+                                    message: "登录已过期",
+                                    type: 'error'
+                                })
+                                this.$router.push("/login");
+                            }else if(res.status === 401){
+                                this.$message({
+                                    message: "没有相关权限",
+                                    type: 'error'
+                                })
+                            }else{
+                                this.$message({
+                                    message: "未知错误" + res.status,
+                                    type: 'error'
+                                })
+                            }
+                        }
+                    }).catch(err => {
+                        //恢复按钮
+                        that.isDisabled = false;
+                        //停止加载
+                        that.isLoading = false;
+console.log(err);
+                        this.$message({
+                            message: "加载失败，服务器出错" + err,
+                            type: 'error'
+                        })
+                        return false;
+                    })
                 } else { //验证未通过
                     //恢复按钮
                     that.isDisabled = false;
@@ -157,6 +214,52 @@ export default {
                 }
             });
         },
+        // 获取日开放计划数据
+        getPlanDay(){
+            fetch(this.URL + "api/daily-open-plans/", {
+                method: 'GET',
+                headers: {
+                    Authorization: 'Bearer  ' + localStorage.getItem("token") 
+                }
+            }).then(res => res.json()).then(res => {
+                if (res.success){
+                    this.planData = res.data;
+                }else{
+                    if (res.status === 402){
+                        this.$message({
+                            message: "登录已过期",
+                            type: 'error'
+                        })
+                        this.$router.push("/login");
+                    }else if(res.status === 401){
+                        this.$message({
+                            message: "没有相关权限",
+                            type: 'error'
+                        })
+                    }else{
+                        this.$message({
+                            message: "未知错误" + res.status,
+                            type: 'error'
+                        })
+                    }
+                }
+            }).catch(err => {
+                this.$message({
+                    message: "加载失败，服务器出错" + err,
+                    type: 'error'
+                })
+                return false;
+            });
+        },
+        // 未完成：等待接口
+        // 获取设备列表
+        getDevices(){
+
+        }
+    },
+    mounted(){
+        this.getPlanDay();
+        this.getDevices();
     }
 }
 </script>
@@ -168,7 +271,8 @@ div {
 
 #plan_edit{
   padding: 10px 30px 10px 30px;
-  height: 100%;
+  max-height: 100%;
+  position: relative;
 }
 
 .title_block, .add_block{
@@ -185,10 +289,10 @@ div {
 
 
 .table_block{
-  height: 80%;
+  max-height: 80%;
 }
 
 .add_footer{
-    padding-top: 30px;
+    padding-top: 10px;
 }
 </style>

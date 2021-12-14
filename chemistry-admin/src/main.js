@@ -39,25 +39,26 @@ new Vue({
 //             let request = new FormData();
 //             request.append("token", localStorage.getItem("token"));
 
-//             fetch(URL + "ping", {
-//                 method: 'POST',
-//                 body: request
-//             }).then(res => res.json()).then(res => {
-//                 console.log(res);
-//                 if (res.status === "failed" && (res.error === "token解析失败" || res.error.split("expired").length === 2)) {
-//                     console.log("需要登录");
-//                     alert("登录已过期，请重新登录")
-//                     next({
-//                         path: '/login'
-//                     })
-//                     return false;
-//                 } else {
-//                     next();
-//                 }
-//             }).catch(err => {
-//                 console.log(err);
-//                 alert("网络错误，请检查你的网络设置")
-//             })
+//             // 是否要做个PING
+//             // fetch(URL + "ping", {
+//             //     method: 'POST',
+//             //     body: request
+//             // }).then(res => res.json()).then(res => {
+//             //     console.log(res);
+//             //     if (res.status === "failed" && (res.error === "token解析失败" || res.error.split("expired").length === 2)) {
+//             //         console.log("需要登录");
+//             //         alert("登录已过期，请重新登录")
+//             //         next({
+//             //             path: '/login'
+//             //         })
+//             //         return false;
+//             //     } else {
+//             //         next();
+//             //     }
+//             // }).catch(err => {
+//             //     console.log(err);
+//             //     alert("网络错误，请检查你的网络设置")
+//             // })
 //         }
 //     } else {
 //         next();

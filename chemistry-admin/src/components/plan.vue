@@ -4,8 +4,8 @@
         <div class="title_block">
             <div class="title">开放情况</div>
             <div class="button_block">
-                <el-button @click="nextWeek" type="primary" size="normal" icon="el-icon-arrow-left">上一周</el-button>
-                <el-button @click="previousWeek" type="primary">下一周<i class="el-icon-arrow-right el-icon--right"></i></el-button>
+                <el-button @click="previousWeek" type="primary" size="normal" icon="el-icon-arrow-left">上一周</el-button>
+                <el-button @click="nextWeek" type="primary">下一周<i class="el-icon-arrow-right el-icon--right"></i></el-button>
             </div>
         </div>
         <!-- 表格 -->
@@ -26,7 +26,7 @@
         </div>
         <!-- 修改开放计划弹窗 -->
         <el-dialog title="选择日开放计划" :visible.sync="planChangeVisible" @close="closeDialog('editForm')">
-            <el-form ref="editForm" :model="editForm" label-width="150px" label-position="left" :rules="planRules">
+            <el-form ref="editForm" :model="editForm" label-width="150px" label-position="left" :rules="planRules" v-loading="isLoading">
                 <el-form-item label="选择设备" prop="devices">
                     <el-checkbox :indeterminate="isIndeterminate" v-model="checkAll" @change="checkAllChange">全选</el-checkbox>
                     <el-checkbox-group v-model="editForm.devices" @change="deviceChange">
@@ -35,7 +35,7 @@
                 </el-form-item>
                 <el-form-item label="选择日开放计划" prop="plan">
                     <el-select v-model="editForm.plan">
-                        <el-option v-for="(item, index) in plans" :key="index" :label="item" :value="index"></el-option>
+                        <el-option v-for="item in plans" :key="item.id" :label="item.name" :value="item.id"></el-option>
                     </el-select>
                 </el-form-item>
                 <div class="add_footer">
@@ -46,11 +46,11 @@
         </el-dialog>
         <!-- 单独修改弹窗 -->
         <el-dialog title="单独修改" :visible.sync="cellChangeVisible" @close="closeDialog('editForm')">
-            <el-form ref="editForm" :model="editForm" label-width="150px" label-position="left">
+            <el-form ref="editForm" :model="editForm" label-width="150px" label-position="left" v-loading="isLoading">
                 <el-form-item label="选择开放设备" prop="devices">
                     <el-checkbox :indeterminate="isIndeterminate" v-model="checkAll" @change="checkAllChange">全选</el-checkbox>
                     <el-checkbox-group v-model="editForm.devices" @change="deviceChange">
-                        <el-checkbox v-for="item in devices" :label="item.id" :key="item.id">{{types[item.type]}}: {{item.name}}</el-checkbox>
+                        <el-checkbox v-for="(item,index) in devices" :label="item.id" :key="item.id" @change="changeDevice(index)">{{types[item.type]}}: {{item.name}}</el-checkbox>
                     </el-checkbox-group>
                 </el-form-item>
                 <div class="add_footer">
@@ -67,6 +67,9 @@ export default {
     name: 'plan_reserve',
     data(){
         return {
+            startDate: "", //当前起始日期
+            endDate: "", //当前结束日期
+            isLoading: false, //控制表单loading
             weekDays: ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"], //填充的星期
             classes: ["第一节", "第二节", "第三节", "第四节", "第五节", "第六节", "第七节"], //节数
             types: ["精馏", "吸收-解吸", "化工传热", "流动过程"], //设备类型显示字符
@@ -77,58 +80,10 @@ export default {
                     name: "精馏设备1", 
                     type:0,
                     param: []
-                },
-                {
-                    id: 2,
-                    name: "化工传热设备1", 
-                    type:2,
-                    param: []
-                },
-                {
-                    id: 3,
-                    name: "化工传热设备2", 
-                    type:2,
-                    param: []
                 }
             ],
-            plans: ["全天开放", "不开放", "晚上开放"],//开放计划列表
-            openData: [ //"date为标准时间，10字符"
-                {
-                    date: "2021-11-08",
-                    status: [0, 0, 0, 0, 0, 0, 0],
-                    devices: [[1, 2, 3], [1, 2, 3], [1, 2, 3], [1, 2, 3], [1, 2, 3], [1, 2, 3], [1, 2, 3]]
-                },
-                {
-                    date: "2021-11-08",
-                    status: [0, 0, 0, 0, 0, 2, 2],
-                    devices: [[1, 2, 3], [1, 2, 3], [1, 2, 3], [1, 2, 3], [1, 2, 3], [], []]
-                },
-                {
-                    date: "2021-11-08",
-                    status: [0, 0, 1, 1, 0, 0, 0],
-                    devices: [[1, 2, 3], [1, 2, 3], [2, 3], [1, 3], [1, 2, 3], [1, 2, 3], [1, 2, 3]]
-                },
-                {
-                    date: "2021-11-08",
-                    status: [0, 1, 0, 0, 1, 0, 0],
-                    devices: [[1, 2, 3], [1, 2], [1, 2, 3], [1, 2, 3], [1, 3], [1, 2, 3], [1, 2, 3]]
-                },
-                {
-                    date: "2021-11-08",
-                    status: [1, 0, 0, 0, 1, 0, 0],
-                    devices: [[1, 2], [1, 2, 3], [1, 2, 3], [1, 2], [1, 2, 3], [1, 2, 3], [1, 2, 3]]
-                },
-                {
-                    date: "2021-11-08",
-                    status: [2, 2, 2, 2, 2, 2, 2],
-                    devices: [[],[],[],[],[],[],[]]
-                },
-                {
-                    date: "2021-11-08",
-                    status: [2, 2, 2, 2, 2, 1, 1],
-                    devices: [[], [], [], [], [], [1], [1]]
-                }
-            ],
+            plans: [],//开放计划列表
+            openData: [],//"date为标准时间，10字符", 2不开放，1部分开放，0全部开放
             editForm: {}, // 弹窗表单绑定
             planChangeDate: -1, //修改开放计划的日期
             planChangeVisible: false, //控制修改开放计划弹窗显示
@@ -162,6 +117,18 @@ export default {
             }else{
                 return "planDate";
             }
+        },
+        // 格式化日期格式，传入Date对象，输出YYYY-DD-MM格式数据
+        formateDate(date){
+            let s = date.toLocaleDateString().replaceAll("/", "-");
+            s = s.split("-");
+            for (let i = 0 ; i < 3 ; i++){
+                if (+s[i] < 10){
+                    s[i] = '0' + s[i];
+                }
+            }
+
+            return s.join('-');
         },
          // 全选被点击，要么从未勾选或模糊态变为选中，要么从选中变为未勾选
         checkAllChange(){
@@ -197,34 +164,226 @@ export default {
         },
         // 修改计划提交
         planSubmit(formName){
+            let that = this;
             this.$refs[formName].validate((valid) => {
                 if (valid) { //验证通过
+                    let requestData = {
+                        date: this.editForm.date,
+                        resourceIds: this.editForm.devices,
+                        dailyOpenPlanId: this.editForm.plan
+                    }
+
                     this.$confirm('确定修改所选设备在' + this.planChangeDate + "的开放计划吗？已有的预约有可能被取消", '提示', {
                         confirmButtonText: '确定',
                         cancelButtonText: '取消',
                         type: 'warning'
                     }).then(() => {
-                        
+                        that.isLoading = true;
+                        fetch(this.URL + "api/tickets/by-date", {
+                            method: 'PUT',
+                            headers: {
+                                Authorization: 'Bearer  ' + localStorage.getItem("token"),
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(requestData)
+                        }).then(res => res.json()).then(res => {
+                            that.isLoading = false;
+                            that.planChangeVisible = false;
+                            if (res.success){
+                                this.getOpen();
+                                this.$message({
+                                    message: "修改成功",
+                                    type: 'success'
+                                })
+                            }else{
+                                if (res.status === 402){
+                                    this.$message({
+                                        message: "登录已过期",
+                                        type: 'error'
+                                    })
+                                    this.$router.push("/login");
+                                }else if(res.status === 401){
+                                    this.$message({
+                                        message: "没有相关权限",
+                                        type: 'error'
+                                    })
+                                }else{
+                                    this.$message({
+                                        message: "未知错误" + res.status,
+                                        type: 'error'
+                                    })
+                                }
+                            }
+                        }).catch(err => {
+                            that.isLoading = false;
+                            this.$message({
+                                message: "加载失败，服务器出错" + err,
+                                type: 'error'
+                            })
+                            return false;
+                        });  
                     }).catch(() => {
                         return false;         
                     });
                 } else { //验证未通过
-                    
-                }
+                    return false;  
+                } 
             });
         },
         // 修改计划取消
         planCancel(){
             this.planChangeVisible = false;
         },
+        // 单独修改时，增加/删除设备
+        changeDevice(index){
+            this.editForm.checked[index] = !this.editForm.checked[index];
+        },
         // 单独修改提交
         cellSubmit(formName){
+            let that = this;
             this.$confirm('确定将所选设备在' + this.cellChangeDate + this.classes[this.cellChangeClassIndex] + "开放吗？已有的预约有可能被取消", '提示', {
                 confirmButtonText: '确定',
                 cancelButtonText: '取消',
                 type: 'warning'
             }).then(() => {
-                        
+                let closedResourceIds = [];
+                let openResourceIds = [];
+                for (let i = 0 ; i < this.editForm.checked.length ; i++){
+                    if (this.editForm.checked[i]){
+                        console.log
+                        if (this.editForm.origin.includes(this.devices[i].id)){
+                            closedResourceIds.push(this.devices[i].id);
+                        }else{
+                            openResourceIds.push(this.devices[i].id);
+                        }
+                    }
+                }
+
+                this.isLoading = true;
+
+                let requestDataClosed = {
+                    date: this.editForm.date,
+                    sn: this.editForm.sn,
+                    resourceIds: closedResourceIds
+                }
+                let p1 = new Promise((resolve, reject) => {
+                    fetch(this.URL + "api/tickets/by-item", {
+                        method: 'DELETE',
+                        headers: {
+                            Authorization: 'Bearer  ' + localStorage.getItem("token"),
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(requestDataClosed)
+                    }).then(res => res.json()).then(res => {
+                        if (res.success){
+                            resolve();
+                        }else{
+                            reject();
+                            if (res.status === 402){
+                                this.$message({
+                                    message: "登录已过期",
+                                    type: 'error'
+                                })
+                                this.$router.push("/login");
+                            }else if(res.status === 401){
+                                this.$message({
+                                    message: "没有相关权限",
+                                    type: 'error'
+                                })
+                            }else{
+                                this.$message({
+                                    message: "未知错误" + res.status,
+                                    type: 'error'
+                                })
+                            }
+                        }
+                    }).catch(err => {
+                        reject();
+                        that.isLoading = false;
+                        this.$message({
+                            message: "加载失败，服务器出错" + err,
+                            type: 'error'
+                        })
+                        return false;
+                    });  
+                });
+
+                let requestDataOpen = {
+                    date: this.editForm.date,
+                    sn: this.editForm.sn,
+                    resourceIds: openResourceIds
+                }
+                let p2 = new Promise((resolve, reject) => {
+                    fetch(this.URL + "api/tickets/by-item", {
+                        method: 'POST',
+                        headers: {
+                            Authorization: 'Bearer  ' + localStorage.getItem("token"),
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(requestDataOpen)
+                    }).then(res => res.json()).then(res => {
+                        if (res.success){
+                            resolve();
+                        }else{
+                            reject();
+                            if (res.status === 402){
+                                this.$message({
+                                    message: "登录已过期",
+                                    type: 'error'
+                                })
+                                this.$router.push("/login");
+                            }else if(res.status === 401){
+                                this.$message({
+                                    message: "没有相关权限",
+                                    type: 'error'
+                                })
+                            }else{
+                                this.$message({
+                                    message: "未知错误" + res.status,
+                                    type: 'error'
+                                })
+                            }
+                        }
+                    }).catch(err => {
+                        reject();
+                        that.isLoading = false;
+                        this.$message({
+                            message: "加载失败，服务器出错" + err,
+                            type: 'error'
+                        })
+                        return false;
+                    });  
+                })
+
+                Promise.all([p1, p2]).then(() => {
+                    this.$message({
+                        message: "修改成功",
+                        type: 'success'
+                    })
+                    this.isLoading = false;
+                    this.cellChangeVisible = false;
+
+                    //修改当前状态
+                    let d = new Date(this.editForm.date);
+                    let index = d.getDay() - this.startDate.getDay();
+                    switch (this.editForm.devices.length){
+                        case 0:
+                            this.openData[index].status.splice(this.editForm.sn, 1, 2);
+                            break;
+                        case 1:
+                            this.openData[index].status.splice(this.editForm.sn, 1, 1);
+                            break;
+                        case 2:
+                            this.openData[index].status.splice(this.editForm.sn, 1, 0);
+                            break;
+                    }
+                    // 修改设备数目
+                    this.openData[index].devices.splice(this.editForm.sn, 1, this.editForm.devices);
+
+                }).catch((code) => {
+                    this.isLoading = false;
+                });
+
             }).catch(() => {
                 return false;         
             });
@@ -241,25 +400,41 @@ export default {
         },
         // 下一周
         nextWeek(){
-
+            this.startDate = new Date(this.startDate.getFullYear(), this.startDate.getMonth(), this.startDate.getDate() + 7);
+            this.endDate = new Date(this.endDate.getFullYear(), this.endDate.getMonth(), this.endDate.getDate() + 7);
+            this.openData.splice(0, this.openData.length);
+            this.getOpen();
         },
         // 上一周
         previousWeek(){
-
+            this.startDate = new Date(this.startDate.getFullYear(), this.startDate.getMonth(), this.startDate.getDate() - 7);
+            this.endDate = new Date(this.endDate.getFullYear(), this.endDate.getMonth(), this.endDate.getDate() - 7);
+            this.openData.splice(0, this.openData.length);
+            this.getOpen();
         },
-        // 修改计划或单独修改
+        // 打开修改计划或单独修改弹窗
         openChange(row, column, cell, event){
             let index = column.index;
             if (index === undefined){ // 修改开放计划
                 this.editForm = {
+                    date: row.date,
                     plan: "",
                     devices: []
                 };
                 this.planChangeVisible = true;
                 this.planChangeDate = row.date;
-            }else{ // 单独修改
+            }else{ // 单独修改   
+                let checked = [];
+                for (let i = 0 ; i < this.devices.length ; i++){
+                    checked.push(false);
+                }
+
                 this.editForm = {
-                    devices: row.devices[column.index]
+                    date: row.date,
+                    sn: column.index,
+                    devices: row.devices[column.index],
+                    checked: checked,
+                    origin: row.devices[column.index]
                 };
 
                 this.cellChangeVisible = true;
@@ -278,16 +453,159 @@ export default {
                 }
             }
         },
+        // 未完成：等待接口
+        // 获取设备信息和初始开放信息
+        getDevicesAndOpen(){
+            // 填充时间
+            let now = new Date();
+            let day = now.getDay();
+            this.startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 1);
+            this.endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7 - day);
+            this.getOpen();
+        },
+        // 获取日开放计划
+        getPlanDay(){
+            fetch(this.URL + "api/daily-open-plans/", {
+                method: 'GET',
+                headers: {
+                    Authorization: 'Bearer  ' + localStorage.getItem("token") 
+                }
+            }).then(res => res.json()).then(res => {
+                if (res.success){
+                    this.plans = res.data;
+                }else{
+                    if (res.status === 402){
+                        this.$message({
+                            message: "登录已过期",
+                            type: 'error'
+                        })
+                        this.$router.push("/login");
+                    }else if(res.status === 401){
+                        this.$message({
+                            message: "没有相关权限",
+                            type: 'error'
+                        })
+                    }else{
+                        this.$message({
+                            message: "未知错误" + res.status,
+                            type: 'error'
+                        })
+                    }
+                }
+            }).catch(err => {
+                this.$message({
+                    message: "加载失败，服务器出错" + err,
+                    type: 'error'
+                })
+                return false;
+            });
+        },
+        // 获取一段StartDate到endDate之间所有设备的开放情况
+        getOpen(){
+            let requests = [];
+            let result = [];
+            for (let i = 0 ; i < this.devices.length ; i++){
+                let id = this.devices[i].id;
+                let requestData = {
+                    startDate: this.startDate.toLocaleDateString(),
+                    endDate: this.endDate.toLocaleDateString()
+                }
+
+                let p = new Promise((resolve, reject) => {
+                    fetch(this.URL + "api/tickets/by-resource/" + id + "?resourceId=" + id 
+                            + "&startDate=" + requestData.startDate + "&endDate=" + requestData.endDate, {
+                        method: 'GET',
+                        headers: {
+                            Authorization: 'Bearer  ' + localStorage.getItem("token")
+                        }
+                    }).then(res => res.json()).then(res => {
+                        if (res.success){
+                            result.push(res.data);
+                            resolve();
+                        }else{
+                            reject();
+                            if (res.status === 402){
+                                this.$message({
+                                    message: "登录已过期",
+                                    type: 'error'
+                                })
+                                this.$router.push("/login");
+                            }else if(res.status === 401){
+                                this.$message({
+                                    message: "没有相关权限",
+                                    type: 'error'
+                                })
+                            }else{
+                                this.$message({
+                                    message: "未知错误" + res.status,
+                                    type: 'error'
+                                })
+                            }
+                        }
+                    }).catch(err => {
+                        reject();
+                        this.$message({
+                            message: "加载失败，服务器出错" + err,
+                            type: 'error'
+                        })
+                        return false;
+                    });  
+                })
+                requests.push(p);
+            }
+
+            Promise.all(requests).then(() => {
+                let temp = {};
+
+                for (let i = 0 ; i < 7 ; i++){                                                  
+                    let now = new Date(this.startDate.getFullYear(), this.startDate.getMonth(), this.startDate.getDate() + i);
+                    let nowString = this.formateDate(now);
+                    let status = new Array(7).fill(2);
+                    let devices = new Array(7);
+                    for (let i = 0 ; i < 7 ; i++){ // 用fill只创建了一个对象
+                        devices[i] = new Array();
+                    }
+
+                    temp[nowString] = {
+                        status: status,
+                        devices: devices
+                    };
+                    
+                }
+
+                // 遍历设备
+                for (let i = 0 ; i < result.length ; i++){
+                    let subresult = result[i];
+
+                    for (let j = 0 ; j < subresult.length ; j++){
+                        temp[subresult[j].date].devices[subresult[j].sn].push(subresult[j].resourceId);
+
+                        // 全部开放
+                        if (temp[subresult[j].date].devices[subresult[j].sn].length === this.devices.length){
+                            temp[subresult[j].date].status[subresult[j].sn] = 0;
+                        }else{
+                            // 部分开放
+                            temp[subresult[j].date].status[subresult[j].sn] = 1;
+                        }
+                    }
+                }
+                console.log(temp);
+
+                //修改数据结构
+                for(let i in temp){
+                    this.openData.push({
+                        date: i,
+                        devices: temp[i].devices,
+                        status: temp[i].status
+                    });
+                }
+            });
+        },
     },
-    created() {
-        // 填充设备
-
-        // 填充时间
-
-        // 填充开放信息
-
-        // 填充开放计划
-    },
+    mounted() {
+        // 填充时间、设备和开放计划
+        this.getDevicesAndOpen();
+    }
 }
 </script>
 
