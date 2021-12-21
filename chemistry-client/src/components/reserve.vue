@@ -4,20 +4,20 @@
         <div class="title_block">
             <!-- 标题 -->
             <div class="left_block">
-                <div class="title" v-if="userType">预约实验</div>
+                <div class="title" v-if="userInfo.userType">预约实验</div>
                 <div class="title" v-else>预约情况</div>
-                <el-select v-model="nowType">
+                <el-select v-model="nowType" @change="changeDevice">
                     <el-option v-for="item in devices" :key="item.id" :label="item.name" :value="item.id"></el-option>
                 </el-select>
             </div>
             <!-- 切换按钮 -->
             <div class="button_block">
-                <el-button @click="nextWeek" type="primary" size="normal" icon="el-icon-arrow-left">上一周</el-button>
-                <el-button @click="previousWeek" type="primary">下一周<i class="el-icon-arrow-right el-icon--right"></i></el-button>
+                <el-button @click="previousWeek" type="primary" size="normal" icon="el-icon-arrow-left">上一周</el-button>
+                <el-button @click="nextWeek" type="primary">下一周<i class="el-icon-arrow-right el-icon--right"></i></el-button>
             </div>
         </div>
         <!-- 学生：表格 -->
-        <div class="table_block" v-if="userType">
+        <div class="table_block" v-if="userInfo.userType">
             <el-table :data="reserveData" border :cell-class-name="studentSetColor" @cell-click="reserve">
                 <el-table-column label="时间" width="200" align="center">
                     <template slot-scope="scope">
@@ -63,68 +63,13 @@ export default {
             nowType: "",
             weekDays: ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"], //填充的星期
             classes: ["第一节", "第二节", "第三节", "第四节", "第五节", "第六节", "第七节"], //节数
-            devices: [ //设备列表
-                {
-                    id: 1,
-                    name: "精馏设备1", 
-                    type:0,
-                    param: []
-                },
-                {
-                    id: 2,
-                    name: "化工传热设备1", 
-                    type:2,
-                    param: []
-                },
-                {
-                    id: 3,
-                    name: "化工传热设备2", 
-                    type:2,
-                    param: []
-                }
-            ],
-            start: "", //起始日期，周一
-            end: "", //终止日期，周日
-            reserveData: [ //预约情况数据，"date为标准时间，10字符"
-                {
-                    date: "2021-11-08",
-                    open: [true, true, true, true, true, true, true],
-                    reserve: [0, 0, 0, 1, 2, 0, 3], // 已预约数目
-                },
-                {
-                    date: "2021-11-09",
-                    open: [true, true, false, false, false, true, true],
-                    reserve: [0, 1, 0, 1, 2, 0, 3]
-                },
-                {
-                    date: "2021-11-10",
-                    open: [true, true, true, true, true, true, true],
-                    reserve: [0, 0, 0, 1, 2, 0, 3]
-                },
-                {
-                    date: "2021-11-11",
-                    open: [true, true, true, true, true, true, true],
-                    reserve: [0, 1, 1, 0, 2, 0, 3]
-                },
-                {
-                    date: "2021-11-12",
-                    open: [false, false, false, false, false, true, true],
-                    reserve: [0, 0, 0, 1, 2, 2, 3]
-                },
-                {
-                    date: "2021-11-13",
-                    open: [false, false, false, false, false, false, false],
-                    reserve: [0, 0, 0, 1, 2, 0, 3]
-                },
-                {
-                    date: "2021-11-14",
-                    open: [false, false, false, false, false, true, true],
-                    reserve: [0, 0, 0, 1, 2, 1, 0]
-                }
-            ],
+            devices: [], //设备列表,
+            startDate: "", //起始日期，周一
+            endDate: "", //终止日期，周日
+            reserveData: [], //预约情况数据，"date为标准时间，10字符"
             myReserveData: [ //学生的预约数据
                 {
-                    date: "2021-11-08",
+                    date: "2021-12-20",
                     reserved: [false, false, false, true, false, false, false]
                 },
                 {
@@ -157,6 +102,7 @@ export default {
     methods: {
         // 设置单元格颜色
         studentSetColor(scope){
+            console.log(scope);
             if (scope.columnIndex !== 0){
                 if (!scope.row.open[scope.columnIndex - 1]){
                     return "reserveClose";
@@ -178,28 +124,190 @@ export default {
                 }
             }
         },
+        // 格式化日期格式，传入Date对象，输出YYYY-DD-MM格式数据
+        formateDate(date){
+            let s = date.toLocaleDateString().replaceAll("/", "-");
+            s = s.split("-");
+            for (let i = 0 ; i < 3 ; i++){
+                if (+s[i] < 10){
+                    s[i] = '0' + s[i];
+                }
+            }
+
+            return s.join('-');
+        },
         // 下一周
         nextWeek(){
-
+            if (this.nowType === ""){
+                return false;
+            }
+            this.startDate = new Date(this.startDate.getFullYear(), this.startDate.getMonth(), this.startDate.getDate() + 7);
+            this.endDate = new Date(this.endDate.getFullYear(), this.endDate.getMonth(), this.endDate.getDate() + 7);
+            this.myReserveData.splice(0, this.myReserveData.length);
+            this.reserveData.splice(0, this.reserveData.length);
+            this.getReserve(this.nowType);
         },
         // 上一周
         previousWeek(){
+            if (this.nowType === ""){
+                return false;
+            }
 
+            this.startDate = new Date(this.startDate.getFullYear(), this.startDate.getMonth(), this.startDate.getDate() - 7);
+            this.endDate = new Date(this.endDate.getFullYear(), this.endDate.getMonth(), this.endDate.getDate() - 7);
+            this.myReserveData.splice(0, this.myReserveData.length);
+            this.reserveData.splice(0, this.reserveData.length);
+            this.getReserve(this.nowType);
+        },
+        // 改变设备，刷新数据
+        changeDevice(value){
+            this.reserveData.splice(0, this.reserveData.length);
+            // this.myReserveData.splice(0, this.myReserveData.length);
+            this.getReserve(value);
+        },
+        // 获取预约信息和自己的预约信息
+        getReserve(id){
+            let temp = {};
+            
+            // 数据格式化用到的数组
+            for (let i = 0 ; i < 7 ; i++){                                                  
+                let now = new Date(this.startDate.getFullYear(), this.startDate.getMonth(), this.startDate.getDate() + i);
+                let nowString = this.formateDate(now);
+                let open = new Array(7).fill(false);
+                let reserve = new Array(7).fill(0);
+
+                temp[nowString] = {
+                    open: open,
+                    reserve: reserve
+                };
+                    
+            }            
+            
+            let requestData = {
+                startDate: this.startDate.toLocaleDateString(),
+                endDate: this.endDate.toLocaleDateString()
+            }
+
+            fetch(this.URL + "api/tickets/by-resource/" + id + "?resourceId=" + id 
+                    + "&startDate=" + requestData.startDate + "&endDate=" + requestData.endDate, {
+                method: 'GET',
+                headers: {
+                    Authorization: 'Bearer  ' + localStorage.getItem("token")
+                }
+            }).then(res => res.json()).then(res => {
+                if (res.success){
+                    let result = res.data;
+                    for (let i = 0 ; i < result.length ; i++){
+                        temp[result[i].date].open[result[i].sn] = true;
+                        temp[result[i].date].reserve[result[i].sn] = result[i].available;
+                    }
+
+                    //修改数据结构
+                    for(let i in temp){
+                        this.reserveData.push({
+                            date: i,
+                            open: temp[i].open,
+                            reserve: temp[i].reserve
+                        });
+                    }
+                }else{
+                    if (res.status === 402){
+                        this.$message({
+                            message: "登录已过期",
+                            type: 'error'
+                        })
+                        this.$router.push("/login");
+                    }else if(res.status === 401){
+                        this.$message({
+                            message: "没有相关权限",
+                            type: 'error'
+                        })
+                    }else{
+                        this.$message({
+                            message: "未知错误" + res.status,
+                            type: 'error'
+                        })
+                    }
+                }
+            }).catch(err => {
+                this.$message({
+                    message: "加载失败，服务器出错" + err,
+                    type: 'error'
+                })
+                return false;
+            });
         },
         // 预约
         reserve(row, column, cell, event){
-            console.log(row, column, cell, event);
-            // if (row.open[column.index])
+            let sn = column.index;
+            let date = row.date;
+            let myReserve = this.myReserveData.find(function(e){
+                return e.date === date;
+            })
+            
+            if (myReserve.reserved[sn]){
+                this.$confirm('确认取消预约吗？' ,{
+                    type: 'warning'
+                }).then(() => {
+                    
+                });
+            }else{
+                if (row.open[sn] && row.reserve[sn] !== 3){ // 过滤掉未开放和已满
+                    this.$confirm('确认要预约此时段吗？', {
+                        type: 'warning'
+                    }).then(() => {
+                    
+                    });
+                }
+            }
+
+        },
+        // 获取设备类型
+        getDevice(){
+            fetch(this.URL + "api/resources/", {
+                method: 'GET',
+                headers: {
+                    Authorization: 'Bearer  ' + localStorage.getItem("token") 
+                }
+            }).then(res => res.json()).then(res => {
+                if (res.success){
+                    this.devices = res.data;
+                }else{
+                    if (res.status === 402){
+                        this.$message({
+                            message: "登录已过期",
+                            type: 'error'
+                        })
+                        this.$router.push("/login");
+                    }else if(res.status === 401){
+                        this.$message({
+                            message: "没有相关权限",
+                            type: 'error'
+                        })
+                    }else{
+                        this.$message({
+                            message: "未知错误" + res.status,
+                            type: 'error'
+                        })
+                    }
+                }
+            }).catch(err => {
+                this.$message({
+                    message: "加载失败，服务器出错" + err,
+                    type: 'error'
+                })
+                return false;
+            });
         }
     },
-    created() {
+    mounted() {
         // 填充设备类型
-
+        this.getDevice();
         // 填充时间
-
-        // 填充预约信息
-
-        // 学生则填充个人预约信息
+        let now = new Date();
+        let day = now.getDay();
+        this.startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 1);
+        this.endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7 - day);
     }
 }
 </script>

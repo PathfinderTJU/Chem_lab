@@ -74,14 +74,7 @@ export default {
             classes: ["第一节", "第二节", "第三节", "第四节", "第五节", "第六节", "第七节"], //节数
             types: ["精馏", "吸收-解吸", "化工传热", "流动过程"], //设备类型显示字符
             texts: ["全部开放", "部分开放", "不开放"],
-            devices: [ //设备列表
-                {
-                    id: 1,
-                    name: "精馏设备1", 
-                    type:0,
-                    param: []
-                }
-            ],
+            devices: [], //设备列表
             plans: [],//开放计划列表
             openData: [],//"date为标准时间，10字符", 2不开放，1部分开放，0全部开放
             editForm: {}, // 弹窗表单绑定
@@ -453,7 +446,6 @@ export default {
                 }
             }
         },
-        // 未完成：等待接口
         // 获取设备信息和初始开放信息
         getDevicesAndOpen(){
             // 填充时间
@@ -461,7 +453,42 @@ export default {
             let day = now.getDay();
             this.startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 1);
             this.endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7 - day);
-            this.getOpen();
+
+            fetch(this.URL + "api/resources/", {
+                method: 'GET',
+                headers: {
+                    Authorization: 'Bearer  ' + localStorage.getItem("token") 
+                }
+            }).then(res => res.json()).then(res => {
+                if (res.success){
+                    this.devices = res.data;
+                    this.getOpen();
+                }else{
+                    if (res.status === 402){
+                        this.$message({
+                            message: "登录已过期",
+                            type: 'error'
+                        })
+                        this.$router.push("/login");
+                    }else if(res.status === 401){
+                        this.$message({
+                            message: "没有相关权限",
+                            type: 'error'
+                        })
+                    }else{
+                        this.$message({
+                            message: "未知错误" + res.status,
+                            type: 'error'
+                        })
+                    }
+                }
+            }).catch(err => {
+                this.$message({
+                    message: "加载失败，服务器出错" + err,
+                    type: 'error'
+                })
+                return false;
+            });
         },
         // 获取日开放计划
         getPlanDay(){
@@ -589,7 +616,6 @@ export default {
                         }
                     }
                 }
-                console.log(temp);
 
                 //修改数据结构
                 for(let i in temp){

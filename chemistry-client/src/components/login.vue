@@ -11,7 +11,7 @@
                     <div class="description">Xingyu Liu 2021.11</div>
                 </div>
                 <div class="form_block">
-                    <div class="login_form_block" v-if="!changePass">
+                    <div class="login_form_block">
                         <div class="option_block">
                             <span id="student_option" :class="[type ? 'chosed' : 'not_chosed']" @click="changeType(true)">学生登录</span>
                             <span>|</span>
@@ -27,7 +27,7 @@
                                 <el-input v-model="form.password" clearable show-password></el-input>
                             </el-form-item>
                             <el-form-item id="submit_item">
-                                <el-button id="submit" type="primary" @click="onSubmit('form')" :disabled="isDisabled">登录</el-button>
+                                <el-button id="submit" type="primary" @click="onSubmit('form')">登录</el-button>
                             </el-form-item>
                         </el-form>
                     </div>
@@ -48,7 +48,6 @@ export default {
                 password: ""
             },
             isLoading: false, // 控制加载状态
-            isDisabled: false, // 控制是否可用
             rules: {
                 username: [
                     {required: true, message: "请输入用户名", trigger: 'blur'}
@@ -62,23 +61,69 @@ export default {
     methods: {
         onSubmit(formName){
             let that = this;
-            this.isDisabled = true;
+            let request = this.form;
 
             this.$refs[formName].validate((valid) => {
                 if (valid) { //验证通过
-                //恢复按钮
-                that.isDisabled = false;
-                //停止加载
-                that.isLoading = false;
-                //关闭表单
-                that.editFormVisible = false; 
+                    // 开始加载
+                    this.isLoading = true;
 
-
-                // 用户类型和用户名存入全局变量
-                
+                    fetch(this.URL + "api/auth/login", {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(request)
+                    }).then(res => res.json()).then(res => {
+                        // 停止加载
+                        that.isLoading = false;
+                        if (res.success){
+                            if (that.type && res.data.Role === "ROLE_stu"){
+                                localStorage.setItem("token", res.data.token);
+                                this.userInfo.userName = request.username;
+                                this.userInfo.userType = true;
+                                this.$message({
+                                    message: "登录成功",
+                                    type: 'success'
+                                })
+                                this.$router.push("/index");
+                            }else if (!that.type && res.data.Role === "ROLE_teacher"){
+                                localStorage.setItem("token", res.data.token);
+                                this.userInfo.userName = request.username;
+                                this.userInfo.userType = false;
+                                this.$message({
+                                    message: "登录成功",
+                                    type: 'success'
+                                })
+                                this.$router.push("/index");
+                            }else{
+                                this.$message({
+                                    message: "无效的用户类型",
+                                    type: 'error'
+                                })
+                            }
+                        }else{
+                            if (res.status === 403){
+                                this.$message({
+                                    message: "用户名或密码错误",
+                                    type: 'error'
+                                })
+                            }else{
+                                this.$message({
+                                    message: "未知错误" + res.status,
+                                    type: 'error'
+                                })
+                            }
+                        }
+                    }).catch(err => {
+                        that.isLoading = false;
+                        this.$message({
+                            message: "加载失败，服务器出错" + err,
+                            type: 'error'
+                        })
+                        return false;
+                    });                  
                 } else {
-                    //恢复按钮
-                    that.isDisabled = false;
                     return false;
                 }
             })

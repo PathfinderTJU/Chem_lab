@@ -54,7 +54,7 @@ export default {
         changePass(formName){
             this.$refs[formName].validate((valid) => {
                 if (valid) {
-                    alert(this.userName)
+                    alert(this.userInfo.userName)
                 }else{
 
                 }

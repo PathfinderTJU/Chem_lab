@@ -18,7 +18,7 @@
     <div class="table_block">
       <el-table :data="deviceData" height="100%" border stripe>
         <el-table-column prop="name" label="设备名称"></el-table-column>
-        <el-table-column prop="type_show" label="设备类型"></el-table-column>
+        <el-table-column prop="typeShow" label="设备类型"></el-table-column>
         <el-table-column label="操作">
           <template slot-scope="scope">
             <el-button type="text" size="small" @click="openEdit(scope)">编辑</el-button>
@@ -42,7 +42,7 @@
         <el-form-item label="设备名称" prop="name">
           <el-input v-model="addForm.name" maxLength="20"></el-input>
         </el-form-item>
-		<el-form-item label="摄像头URL" prop="url">
+		    <el-form-item label="摄像头URL" prop="url">
           <el-input v-model="addForm.url"></el-input>
         </el-form-item>
         <div class="add_footer">
@@ -52,13 +52,13 @@
       </el-form>
     </el-dialog>
     <!-- 编辑弹窗 -->
-	<!-- <el-dialog title="编辑设备" :visible.sync="editFormVisible" @close="closeDialog('editForm')">
+	<el-dialog title="编辑设备" :visible.sync="editFormVisible" @close="closeDialog('editForm')">
       <el-form ref="editForm" :model="editForm" label-width="100px" label-position="left" :rules="addRules" v-loading="isLoading">
         <el-form-item label="设备类型" prop="type">
-          <div>{{this.types[editForm.type].label}}</div>
+          <div>{{editForm.typeShow}}</div>
         </el-form-item>
         <el-form-item label="设备名称" prop="name">
-          <div>{{editForm.name}}</div>
+          <el-input v-model="editForm.name"></el-input>
         </el-form-item>
 		<el-form-item label="摄像头URL" prop="url">
           <el-input v-model="editForm.url"></el-input>
@@ -68,239 +68,333 @@
           <el-button @click="editCancel">取消</el-button>
         </div>
       </el-form>
-    </el-dialog> -->
+    </el-dialog>
   </div>
 </template>
 
 <script>
 export default {
-  name: 'account',
-  data(){
-    return{
-      deviceData: [
-        // 【数据结构】设备数据
-        // {
-        //   name：string
-        //   type：int
-        //   param: [{
-        //     key: string,
-        //     value: string
-        //   }]
-        // }
-        {
-          name: "精馏设备1", 
-          type:0,
-          type_show: "精馏",
+    name: 'account',
+    data(){
+        return{
+            deviceData: [], //设备数据
+            devices: [],
+            addFormVisible: false, //控制增加弹窗
+            editFormVisible: false, //控制编辑弹窗
+            nowType: "", //当前设备类型
+            types: [ //设备类型
+                {value: 'A', label: "精馏"},
+                {value: 'B', label: "吸收-解吸"},
+                {value: 'C', label: "化工传热"},
+                {value: 'D', label: "流动过程"}
+            ],
+            isDisabled: false, //禁用表单提交按钮
+            isLoading: false, //控制加载状态的出现
+            tokenData: {}, //token数据
+            addForm: { //新增弹窗表单数据
+              name: "",
+              type: "",
+              url: ""
+            },
+            editForm: {}, //编辑弹窗表单数据
+            updateIndex: 0, //当前修改的数据index
+            addRules: { //新增表单的完整性检查规则
+                name: [
+                {required: true, message: "请输入设备名", trigger: 'blur'}
+                ],
+                url: [
+                {required: true, message: "请输入摄像头地址", trigger: 'blur'}
+                ]
+            },
+            editRules: { //新增表单的完整性检查规则
+                name: [
+                {required: true, message: "请输入设备名", trigger: 'blur'}
+                ],
+                url: [
+                {required: true, message: "请输入摄像头地址", trigger: 'blur'}
+                ]
+            },
         }
-      ], //用户数据
-      addFormVisible: false, //控制增加弹窗
-      editFormVisible: false, //控制编辑弹窗
-      nowType: "", //当前设备类型
-      types: [ //设备类型
-        {value: 0, label: "精馏"},
-        {value: 1, label: "吸收-解吸"},
-        {value: 2, label: "化工传热"},
-        {value: 3, label: "流动过程"}
-      ],
-      isDisabled: false, //禁用表单提交按钮
-      isLoading: false, //控制加载状态的出现
-      tokenData: {}, //token数据
-      addForm: { //新增弹窗表单数据
-        name: "",
-        type: 0,
-        param:[]
-      },
-      editForm: {}, //编辑弹窗表单数据
-      updateIndex: 0, //当前修改的数据index
-      addRules: { //新增表单的完整性检查规则
-        name: [
-          {required: true, message: "请输入设备名", trigger: 'blur'}
-        ],
-        url: [
-          {required: true, message: "请输入摄像头地址", trigger: 'blur'}
-        ]
-      },
-	  editRules: { //新增表单的完整性检查规则
-        name: [
-          {required: true, message: "请输入设备名", trigger: 'blur'}
-        ],
-        url: [
-          {required: true, message: "请输入摄像头地址", trigger: 'blur'}
-        ]
-      },
-	
+    },
+    methods: {
+        // 关闭弹窗
+        closeDialog(formName){
+            this.$refs[formName].resetFields();
+        },
+        // 更改下拉菜单：更改要显示的设备类型
+        changeType(index){
+            let type = index;
+            this.deviceData.splice(0, this.deviceData.length);
+            
+            // devices是源数据，deviceData是显示的数据
+            for (let i = 0 ; i < this.devices.length ; i++){
+                if (this.devices[i].type === type){
+                    this.deviceData.push(this.devices[i]);
+                }
+            }
+        },
+        // 删除数据
+        deleteData(scope){
+            let index = scope.$index;
+            let id = this.deviceData[index].id;
+
+            fetch(this.URL + "api/resources/" + id, {
+                method: 'DELETE',
+                headers: {
+                    Authorization: 'Bearer  ' + localStorage.getItem("token") 
+                }
+            }).then(res => res.json()).then(res => {
+                if (res.success){
+                    this.getDevices();
+                    this.deviceData.splice(index, 1);
+                    this.$message({
+                        message: "删除成功",
+                        type: 'success'
+                    })
+                }else{
+                    if (res.status === 402){
+                        this.$message({
+                            message: "登录已过期",
+                            type: 'error'
+                        })
+                        this.$router.push("/login");
+                    }else if(res.status === 401){
+                        this.$message({
+                            message: "没有相关权限",
+                            type: 'error'
+                        })
+                    }else{
+                        this.$message({
+                            message: "未知错误" + res.status,
+                            type: 'error'
+                        })
+                    }
+                }
+            }).catch(err => {
+                this.$message({
+                        message: "加载失败，服务器出错" + err,
+                        type: 'error'
+                })
+                return false;
+            });
+        },
+		// 未完成：接口不全
+		// 提交增加表单
+        addSubmit(formName){
+            let data = this.addForm;
+
+            //判断合法输入
+            this.$refs[formName].validate((valid) => {
+                if (valid) { //验证通过
+                    this.isLoading = true;
+                
+                    fetch(this.URL + "api/resources/", {
+                        method: 'POST',
+                        headers: {
+                            Authorization: 'Bearer  ' + localStorage.getItem("token"),
+							'Content-Type': 'application/json'
+                        },
+						body: JSON.stringify(data)
+                    }).then(res => res.json()).then(res => {
+						//停止加载
+						this.isLoading = false;
+
+                        if (res.success){
+                            this.getDevices();
+
+							//关闭表单
+							this.addFormVisible = false;
+							//还原
+							this.addForm = { 
+								name: "",
+								type: "",
+								url: ""
+							}
+
+                            this.$message({
+                                message: "添加成功",
+                                type: 'success'
+                            })
+                        }else{
+                            if (res.status === 402){
+                                this.$message({
+                                    message: "登录已过期",
+                                    type: 'error'
+                                })
+                                this.$router.push("/login");
+                            }else if(res.status === 401){
+                                this.$message({
+                                    message: "没有相关权限",
+                                    type: 'error'
+                                })
+                            }else{
+                                this.$message({
+                                    message: "未知错误" + res.status,
+                                    type: 'error'
+                                })
+                            }
+                        }
+                    }).catch(err => {
+						//停止加载
+						this.isLoading = false;
+
+                        this.$message({
+                            message: "加载失败，服务器出错" + err,
+                            type: 'error'
+                        })
+                        return false;
+                    });
+                } else { //验证未通过
+                    return false;
+                }
+            });
+        },
+        // 取消提交增加表单
+        addCancel(){
+            this.addFormVisible = false;
+            this.$refs["addForm"].resetFields();
+            //还原
+            this.addForm = { 
+                name: "",
+                type: "",
+                url: ""
+            }
+        },
+        // 向编辑表单中填充数据
+        openEdit(scope){
+            //填充数据
+			let that = this;
+            let index = scope.$index;
+            this.editForm = JSON.parse(JSON.stringify(this.deviceData[index]));
+			// 显示类型文字
+			this.editForm.typeShow = this.types.find(function (e) {
+				return e.value === that.editForm.type;
+			}).label;
+            this.updateIndex = index;
+            this.editFormVisible = true;
+        },
+		// 未完成：接口不全
+        // 提交编辑表单
+        editSubmit(formName){
+			let data = this.editForm;
+
+            //判断合法输入
+            this.$refs[formName].validate((valid) => {
+                if (valid) { //验证通过
+                    this.isLoading = true;
+                
+                    fetch(this.URL + "api/resources/" + this.deviceData[this.updateIndex].id, {
+                        method: 'PUT',
+                        headers: {
+                            Authorization: 'Bearer  ' + localStorage.getItem("token"),
+							'Content-Type': 'application/json'
+                        },
+						body: JSON.stringify(data)
+                    }).then(res => res.json()).then(res => {
+						//停止加载
+						this.isLoading = false;
+
+                        if (res.success){
+                            this.getDevices();
+
+							//关闭表单
+							this.editFormVisible = false;
+
+                            this.$message({
+                                message: "修改成功",
+                                type: 'success'
+                            })
+                        }else{
+                            if (res.status === 402){
+                                this.$message({
+                                    message: "登录已过期",
+                                    type: 'error'
+                                })
+                                this.$router.push("/login");
+                            }else if(res.status === 401){
+                                this.$message({
+                                    message: "没有相关权限",
+                                    type: 'error'
+                                })
+                            }else{
+                                this.$message({
+                                    message: "未知错误" + res.status,
+                                    type: 'error'
+                                })
+                            }
+                        }
+                    }).catch(err => {
+						//停止加载
+						this.isLoading = false;
+
+                        this.$message({
+                                message: "加载失败，服务器出错" + err,
+                                type: 'error'
+                        })
+                        return false;
+                    });
+                } else { //验证未通过
+                    return false;
+                }
+            });           
+        },
+        // 取消提交编辑表单
+        editCancel(){
+            this.editFormVisible = false;
+            this.$refs["editForm"].resetFields();
+        },  
+        // 获取设备列表
+        getDevices(){
+            fetch(this.URL + "api/resources/", {
+                method: 'GET',
+                headers: {
+                        Authorization: 'Bearer  ' + localStorage.getItem("token") 
+                }
+            }).then(res => res.json()).then(res => {
+                if (res.success){
+					let result = res.data;
+
+					for(let i = 0 ; i < result.length ; i++){
+						result[i].typeShow = this.types.find(function(e){
+							return e.value === result[i].type
+						}).label;
+					}
+                    this.devices = result;
+					if (this.nowType !== ""){
+						this.changeType(this.nowType);
+					}
+                }else{
+                    if (res.status === 402){
+                        this.$message({
+                            message: "登录已过期",
+                            type: 'error'
+                        })
+                        this.$router.push("/login");
+                    }else if(res.status === 401){
+                        this.$message({
+                            message: "没有相关权限",
+                            type: 'error'
+                        })
+                    }else{
+                        this.$message({
+                            message: "未知错误" + res.status,
+                            type: 'error'
+                        })
+                    }
+                }
+            }).catch(err => {
+                this.$message({
+                        message: "加载失败，服务器出错" + err,
+                        type: 'error'
+                })
+                return false;
+            });
+        }
+  	},
+  	// 初始化数据
+  	mounted() {
+		this.getDevices();
     }
-  },
-  methods: {
-    // 关闭弹窗
-    closeDialog(formName){
-      this.$refs[formName].resetFields();
-    },
-    // 更改下拉菜单：更改要显示的设备类型
-    changeType(index){
-      let type = index;
-
-      // 【网络请求】请求对应类型的设备数据
-      // 请求类型：GET
-      // 参数：type：int
-      // 返回值：data：JSON array
-      // [{
-      //   name：string
-      //   type：int
-      //   param: [{
-      //     key: string,
-      //     value: string
-      //   }]
-      // }]
-    },
-    // 删除数据
-    deleteData(scope){
-      let index = scope.$index;
-      let id = this.deviceData[index].id;
-      let that = this;
-
-      // 【网络请求】删除设备
-      // 请求类型：DELETE
-      // 参数：token: string, id：string
-      // 返回值：无
-    },
-    // 提交增加表单
-    addSubmit(formName){
-      //禁用按钮
-      this.isDisabled = true;
-      let that = this;
-      let data = this.addForm;
-
-      //判断合法输入
-      this.$refs[formName].validate((valid) => {
-        if (valid) { //验证通过
-          that.isLoading = true;
-          that.isDisabled = true;
-          
-          // 【网络请求】新增用户，返回新增的用户
-          // 请求类型：POST
-          // 参数：token: string, data：JSON
-          // {
-          //   username：string
-          //   password: string
-          //   type：int
-          //   tel：int
-          //   email：string
-          //   class：int
-          // }
-          // 返回值：data：JSON
-          // {
-          //   username：string
-          //   type：int
-          //   tel：int
-          //   email：string
-          //   class：int
-          // }
-
-          //将新增数据加入表格，若表格显示的不是当前类型则不添加
-
-          //恢复按钮
-          that.isDisabled = false;
-          //停止加载
-          that.isLoading = false;
-          //关闭表单
-          that.addFormVisible = false;
-          this.$refs["addForm"].resetFields();
-        } else { //验证未通过
-          //恢复按钮
-          that.isDisabled = false;
-          return false;
-        }
-      });
-    },
-    // 取消提交增加表单
-    addCancel(){
-      this.addFormVisible = false;
-      this.$refs["addForm"].resetFields();
-      //还原
-      this.addForm = { 
-        username: "",
-        password: "",
-        confirm: "",
-        type: 0,
-        tel: "",
-        email: "",
-        class: ""
-      }
-    },
-    // 向编辑表单中填充数据
-    openEdit(scope){
-      //填充数据
-      let index = scope.$index;
-      this.editForm = JSON.parse(JSON.stringify(this.deviceData[index]));
-
-      this.updateIndex = index;
-      this.editFormVisible = true;
-    },
-    // 提交编辑表单
-    editSubmit(formName){
-      //禁用按钮
-      this.isDisabled = true;
-      let that = this;
-      let data = this.editForm;
-
-      this.$refs[formName].validate((valid) => {
-        if (valid) { //验证通过
-          // 【网络请求】修改用户，返回修改后的用户
-          // 请求类型：PUT
-          // 参数：token: string, data：JSON
-          // {
-          //   username：string
-          //   password: string
-          //   type：int
-          //   tel：int
-          //   email：string
-          //   class：int
-          // }
-          // 返回值：data：JSON
-          // {
-          //   username：string
-          //   type：int
-          //   tel：int
-          //   email：string
-          //   class：int
-          // }
-
-          //恢复按钮
-          that.isDisabled = false;
-          //停止加载
-          that.isLoading = false;
-          //关闭表单
-          that.editFormVisible = false; 
-
-        } else {
-          //恢复按钮
-          that.isDisabled = false;
-          return false;
-        }
-      })
-    },
-    // 取消提交编辑表单
-    editCancel(){
-      this.editFormVisible = false;
-      this.$refs["editForm"].resetFields();
-    },  
-  },
-  // 初始化数据
-  created: function(){
-    // 【网络请求】请求精馏类型的用户数据
-    // 请求类型：GET
-    // 参数：type：0
-    // 返回值：data：JSON array
-    // [{
-    //   name：string
-    //   type：int
-    //   param: [{
-    //     key: string,
-    //     value: string
-    //   }]
-    // }]
-  }
 }
 </script>
 

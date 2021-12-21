@@ -59,8 +59,41 @@ export default {
             let id = this.reserveData[scope.$index].reserveId;
         }
     },
-    created() {
-
+    mounted() {
+        fetch(this.URL + "api/booking/by-user/" + this.userInfo.userName, {
+            method: 'GET',
+            headers: {
+                Authorization: 'Bearer  ' + localStorage.getItem("token") 
+            }
+        }).then(res => res.json()).then(res => {
+            if (res.success){
+                console.log(res);
+            }else{
+                if (res.status === 402){
+                    this.$message({
+                        message: "登录已过期",
+                        type: 'error'
+                    })
+                    this.$router.push("/login");
+                }else if(res.status === 401){
+                    this.$message({
+                        message: "没有相关权限",
+                        type: 'error'
+                    })
+                }else{
+                    this.$message({
+                        message: "未知错误" + res.status,
+                        type: 'error'
+                    })
+                }
+            }
+        }).catch(err => {
+            this.$message({
+                message: "加载失败，服务器出错" + err,
+                    type: 'error'
+                })
+            return false;
+        });
     },
 }
 </script>

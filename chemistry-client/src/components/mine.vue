@@ -1,16 +1,16 @@
 <template>
     <div id="mine">
         <div class="title_block">
-            <div class="title" v-if="!userType">学生实验</div>
+            <div class="title" v-if="!userInfo.userType">学生实验</div>
             <div class="title" v-else>我的实验</div>
         </div>
-        <div class="option_block" v-if="!userType">
+        <div class="option_block" v-if="!userInfo.userType">
             <el-select v-model="nowType" @change="changeDevice">
                 <el-option v-for="item in devices" :key="item.id" :label="item.name" :value="item.id"></el-option>
             </el-select>
             <el-switch v-model="tjuOnly" active-text="只看天大学生" inactive-text="查看全部" @change="showTjuOnly"></el-switch>
         </div>
-        <div class="search_block" v-if="!userType">
+        <div class="search_block" v-if="!userInfo.userType">
             <div class="search_sub_block">
                 <el-input class="search_input" v-model="idKeyword" clearable></el-input>
                 <el-button type="primary" @click="searchById">按学号筛选</el-button>
@@ -20,7 +20,7 @@
                 <el-button type="primary" @click="searchByClass">按班号筛选</el-button>
             </div>
         </div>
-        <div class="table_block" v-if="userType">
+        <div class="table_block" v-if="userInfo.userType">
             <el-table :data="exData" border stripe height="100%">
                 <el-table-column prop="date" label="日期" align="center">
                     <template slot-scope="scope">

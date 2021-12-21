@@ -5,7 +5,7 @@
       <div class="title">账户管理</div>
       <el-button id="add_button" type="text" size="small" @click="addFormVisible = true">新增</el-button>
       <el-button id="import_button" type="text" size="small" @click="importFormVisible = true">导入</el-button>
-      <el-button type="text" size="small" @click="download">下载模板</el-button>
+      <el-link type="primary" :href="downloadURL">（下载模板）</el-link>
     </div>
     <!-- 选项 -->
     <div class="option_block">
@@ -114,11 +114,14 @@
     <el-dialog title="批量导入用户" :visible.sync="importFormVisible">
       <el-upload
         ref="upload"
-        action="https://jsonplaceholder.typicode.com/posts/" 
+		:headers="uploadHeaders"
+        :action="uploadURL"
         :before-remove="beforeRemove" 
         :on-success="uploadSuccess"
         :on-error="uploadError"
-        accept="application/vnd.ms-excel">
+		:on-progress="startUpload"
+		:disabled = "isDisabled"
+        accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel">
         <el-button size="small" type="primary">点击上传</el-button>
         <div slot="tip" class="el-upload__tip">只能上传Excel xlsx/xls文件</div>
       </el-upload>
@@ -128,396 +131,358 @@
 
 <script>
 export default {
-  name: 'account',
-  data(){
-    //新增表单，确认密码的验证
-    var addConfirmPasswordRule = (rule, value, callback) => {
-      if (value !== this.addForm.password){
-        callback(new Error('两次输入的密码不一致'));
-      }else{
-        callback();
-      }
-    };
+  	name: 'account',
+  	data(){
+		//新增表单，确认密码的验证
+		var addConfirmPasswordRule = (rule, value, callback) => {
+		if (value !== this.addForm.password){
+			callback(new Error('两次输入的密码不一致'));
+		}else{
+			callback();
+		}
+		};
 
-    //编辑表单，确认密码的验证
-    var editConfirmPasswordRule = (rule, value, callback) => {
-      if (this.editForm.password !== "" && value !== this.editForm.password){
-        callback(new Error("两次输入的密码不一致"));
-      }else{
-        callback();
-      }
-    };
+		//编辑表单，确认密码的验证
+		var editConfirmPasswordRule = (rule, value, callback) => {
+		if (this.editForm.password !== "" && value !== this.editForm.password){
+			callback(new Error("两次输入的密码不一致"));
+		}else{
+			callback();
+		}
+		};
 
-    //导入表单，确认密码的验证
-    var importConfirmPasswordRule = (rule, value, callback) => {
-      if (value !== this.importForm.password){
-        callback(new Error('两次输入的密码不一致'));
-      }else{
-        callback();
-      }
-    };
+		//导入表单，确认密码的验证
+		var importConfirmPasswordRule = (rule, value, callback) => {
+		if (value !== this.importForm.password){
+			callback(new Error('两次输入的密码不一致'));
+		}else{
+			callback();
+		}
+		};
 
-    return{
-      accountData: [
-        // 【数据结构】用户数据
-        // {
-        //   username：string
-        //   password: string
-        //   type：int
-        //   tel：int
-        //   email：string
-        //   class：int
-        // }
-        {
-          username: "测试数据1", 
-          type:0,
-          tel: "18522386189",
-          email:"1538420545@qq.com",
-          class:"52323",
-          type_show: "学生"
-        }
-      ], //用户数据
-      addFormVisible: false, //控制增加弹窗
-      importFormVisible: false, //控制导入弹窗
-      editFormVisible: false, //控制编辑弹窗
-      keyword: "", //搜索关键字
-      nowType: 0, //当前用户类型
-      types: [ //用户类型
-        {value: 0, label: "学生"},
-        {value: 1, label: "教师"},
-        {value: 2, label: "管理员"}
-      ],
-      isDisabled: false, //禁用表单提交按钮
-      isLoading: false, //控制加载状态的出现
-      tokenData: {}, //token数据
-      addForm: { //新增弹窗表单数据
-        username: "",
-        password: "",
-        confirm: "",
-        type: 0,
-        tel: "",
-        email: "",
-        class: "",
-        university: "",
-        school: "",
-      },
-      editForm: {}, //编辑弹窗表单数据
-      updateIndex: 0, //当前修改的数据index
-      addRules: { //新增表单的完整性检查规则
-        username: [
-          {required: true, message: "请输入用户名", trigger: 'blur'}
-        ],
-        password: [
-          {required: true, message: "请输入密码", trigger: 'blur'},
-          {min: 6, message: "密码长度不能少于6位", trigger: 'blur'}
-        ],
-        confirm:[
-          {required: true, message: "请确认密码", trigger: 'blur'},
-          {validator: addConfirmPasswordRule, trigger: 'blur'}
-        ],
-        tel: [
-          {min:11, type: 'number', message: "请输入正确的手机号码", trigger: 'blur'}
-        ],
-        email: [
-          {type: 'email', message: "请输入正确的邮箱", trigger: 'blur'}
-        ],
-        class: [
-          {required: true, message: "请输入逻辑班号", trigger: 'blur'}
-        ],
-        university: [
-          {required: true, message: "请输入学校", trigger: 'blur'}
-        ],
-        school: [
-          {required: true, message: "请输入学院", trigger: 'blur'}
-        ]
-      },
-      editRules: { //编辑表单的完整性检查规则
-        username: [
-          {required: true, message: "请输入用户名", trigger: 'blur'}
-        ],
-        password: [
-          {min: 6, message: "密码长度不能少于6位", trigger: 'blur'}
-        ],
-        confirm:[
-          {validator: editConfirmPasswordRule, trigger: 'blur'}
-        ],
-        tel: [
-          {min:11, type: 'number', message: "请输入正确的手机号码", trigger: 'blur'}
-        ],
-        email: [
-          {type: 'email', message: "请输入正确的邮箱", trigger: 'blur'}
-        ],
-        class: [
-          {required: true, message: "请输入逻辑班号", trigger: 'blur'}
-        ]
-      },
-      importRules: { //导入表单的完整性检查规则
-        fileId: [
-          {required: true, message: "请上传名单文件", trigger: 'blur'}
-        ],
-        password: [
-          {required: true, message: "请输入密码", trigger: 'blur'},
-          {min: 6, message: "密码长度不能少于6位", trigger: 'blur'}
-        ],
-        confirm:[
-          {required: true, message: "请确认密码", trigger: 'blur'},
-          {validator: importConfirmPasswordRule, trigger: 'blur'}
-        ]
-      }
-    }
-  },
-  methods: {
-    // 更改下拉菜单：更改要显示的用户类型
-    changeType(index){
-      let type = index;
+		return{
+			accountData: [
+				{
+					username: "测试数据1", 
+					type:0,
+					tel: "18522386189",
+					email:"1538420545@qq.com",
+					class:"52323",
+					type_show: "学生"
+				}
+			], //用户数据
+			addFormVisible: false, //控制增加弹窗
+			importFormVisible: false, //控制导入弹窗
+			editFormVisible: false, //控制编辑弹窗
+			downloadURL: "", // 下载模板URL
+			uploadURL: "", // 上传地址
+			uploadHeaders: {}, // 上传的Headers
+			keyword: "", //搜索关键字
+			nowType: 0, //当前用户类型
+			types: [ //用户类型
+				{value: 0, label: "学生"},
+				{value: 1, label: "教师"},
+				{value: 2, label: "管理员"}
+			],
+			isDisabled: false, //禁用表单提交按钮
+			isLoading: false, //控制加载状态的出现
+			tokenData: {}, //token数据
+			addForm: { //新增弹窗表单数据
+				username: "",
+				password: "",
+				confirm: "",
+				type: 0,
+				tel: "",
+				email: "",
+				class: "",
+				university: "",
+				school: "",
+			},
+			editForm: {}, //编辑弹窗表单数据
+			updateIndex: 0, //当前修改的数据index
+			addRules: { //新增表单的完整性检查规则
+				username: [
+					{required: true, message: "请输入用户名", trigger: 'blur'}
+				],
+				password: [
+					{required: true, message: "请输入密码", trigger: 'blur'},
+					{min: 6, message: "密码长度不能少于6位", trigger: 'blur'}
+				],
+				confirm:[
+					{required: true, message: "请确认密码", trigger: 'blur'},
+					{validator: addConfirmPasswordRule, trigger: 'blur'}
+				],
+				tel: [
+					{min:11, type: 'number', message: "请输入正确的手机号码", trigger: 'blur'}
+				],
+				email: [
+					{type: 'email', message: "请输入正确的邮箱", trigger: 'blur'}
+				],
+				class: [
+					{required: true, message: "请输入逻辑班号", trigger: 'blur'}
+				],
+				university: [
+					{required: true, message: "请输入学校", trigger: 'blur'}
+				],
+				school: [
+					{required: true, message: "请输入学院", trigger: 'blur'}
+				]
+			},
+			editRules: { //编辑表单的完整性检查规则
+				username: [
+					{required: true, message: "请输入用户名", trigger: 'blur'}
+				],
+				password: [
+					{min: 6, message: "密码长度不能少于6位", trigger: 'blur'}
+				],
+				confirm:[
+					{validator: editConfirmPasswordRule, trigger: 'blur'}
+				],
+				tel: [
+					{min:11, type: 'number', message: "请输入正确的手机号码", trigger: 'blur'}
+				],
+				email: [
+					{type: 'email', message: "请输入正确的邮箱", trigger: 'blur'}
+				],	
+				class: [
+					{required: true, message: "请输入逻辑班号", trigger: 'blur'}
+				]
+			},
+			importRules: { //导入表单的完整性检查规则
+				fileId: [
+					{required: true, message: "请上传名单文件", trigger: 'blur'}
+				],
+				password: [
+					{required: true, message: "请输入密码", trigger: 'blur'},
+					{min: 6, message: "密码长度不能少于6位", trigger: 'blur'}
+				],
+				confirm:[
+					{required: true, message: "请确认密码", trigger: 'blur'},
+					{validator: importConfirmPasswordRule, trigger: 'blur'}
+				]
+			}
+		}
+  	},
+  	methods: {
+		// 更改下拉菜单：更改要显示的用户类型
+		changeType(index){
+			let type = index;
 
-      // 【网络请求】请求对应类型的用户数据
-      // 请求类型：GET
-      // 参数：type：int
-      // 返回值：data：JSON array
-      // [{
-      //   username：string
-      //   type：int
-      //   tel：int
-      //   email：string
-      //   class：int
-      // }]
-    },
-    // 点击搜索按钮：根据用户名搜索用户
-    searchByName(){
-      let key = this.keyword;
+			// 【网络请求】请求对应类型的用户数据
+			// 请求类型：GET
+			// 参数：type：int
+			// 返回值：data：JSON array
+			// [{
+			//   username：string
+			//   type：int
+			//   tel：int
+			//   email：string
+			//   class：int
+			// }]
+		},
+		// 点击搜索按钮：根据用户名搜索用户
+		searchByName(){
+			let key = this.keyword;
 
-      // 【网络请求】根据用户名，搜索用户数据
-      // 请求类型：GET
-      // 参数：key：string
-      // 返回值：data：JSON
-      // {
-      //   username：string
-      //   type：int
-      //   tel：int
-      //   email：string
-      //   class：int
-      // }
-    },
-    // 删除数据
-    deleteData(scope){
-      let index = scope.$index;
-      let id = this.showData[index].id;
-      let that = this;
+			// 【网络请求】根据用户名，搜索用户数据
+			// 请求类型：GET
+			// 参数：key：string
+			// 返回值：data：JSON
+			// {
+			//   username：string
+			//   type：int
+			//   tel：int
+			//   email：string
+			//   class：int
+			// }
+		},
+		// 删除数据
+		deleteData(scope){
+			let index = scope.$index;
+			let id = this.showData[index].id;
+			let that = this;
 
-      // 【网络请求】删除用户
-      // 请求类型：DELETE
-      // 参数：token: string, id：string
-      // 返回值：无
-    },
-    // 上传文件成功
-    uploadSuccess(res){
+			// 【网络请求】删除用户
+			// 请求类型：DELETE
+			// 参数：token: string, id：string
+			// 返回值：无
+		},
+		// 开始上传文件
+		startUpload(){
+			this.isDisabled = true;
+		},
+		// 上传文件成功
+		uploadSuccess(res){
+			this.isDisabled = false;
+			if (res.success){
+				this.$message({
+                    message: "导入成功",
+                	type: 'success'
+                })
+			}else{
+				if (res.status === 402){
+                    this.$message({
+                        message: "登录已过期",
+                        type: 'error'
+                    })
+                    this.$router.push("/login");
+                }else if(res.status === 401){
+                    this.$message({
+                        message: "没有相关权限",
+                        type: 'error'
+                    })
+                }else{
+                    this.$message({
+                        message: "未知错误" + res.status,
+                        type: 'error'
+                    })
+                }
+			}
+		},
+		// 上传文件出错
+		uploadError(res){
+			this.isDisabled = false;
+			this.$message({
+                message: "网络错误，请假检查网络设置",
+                type: 'error'
+            })
+		},
+		// 移除上传文件前询问
+		beforeRemove(file, fileList){
+			return this.$confirm('确认移除?')
+		},
+		// 提交增加表单
+		addSubmit(formName){
+			//禁用按钮
+			this.isDisabled = true;
+			let that = this;
+			let data = this.addForm;
 
-    },
-    // 上传文件出错
-    uploadError(res){
-      
-    },
-    // 移除上传文件前询问
-    beforeRemove(file, fileList){
-      return this.$confirm('确认移除?')
-    },
-    // 提交增加表单
-    addSubmit(formName){
-      //禁用按钮
-      this.isDisabled = true;
-      let that = this;
-      let data = this.addForm;
+			//判断合法输入
+			this.$refs[formName].validate((valid) => {
+				if (valid) { //验证通过
+				that.isLoading = true;
+				that.isDisabled = true;
+				
+				// 【网络请求】新增用户，返回新增的用户
+				// 请求类型：POST
+				// 参数：token: string, data：JSON
+				// {
+				//   username：string
+				//   password: string
+				//   type：int
+				//   tel：int
+				//   email：string
+				//   class：int
+				// }
+				// 返回值：data：JSON
+				// {
+				//   username：string
+				//   type：int
+				//   tel：int
+				//   email：string
+				//   class：int
+				// }
 
-      //判断合法输入
-      this.$refs[formName].validate((valid) => {
-        if (valid) { //验证通过
-          that.isLoading = true;
-          that.isDisabled = true;
-          
-          // 【网络请求】新增用户，返回新增的用户
-          // 请求类型：POST
-          // 参数：token: string, data：JSON
-          // {
-          //   username：string
-          //   password: string
-          //   type：int
-          //   tel：int
-          //   email：string
-          //   class：int
-          // }
-          // 返回值：data：JSON
-          // {
-          //   username：string
-          //   type：int
-          //   tel：int
-          //   email：string
-          //   class：int
-          // }
+				//将新增数据加入表格，若表格显示的不是当前类型则不添加
 
-          //将新增数据加入表格，若表格显示的不是当前类型则不添加
+				//恢复按钮
+				that.isDisabled = false;
+				//停止加载
+				that.isLoading = false;
+				//关闭表单
+				that.addFormVisible = false;
+				this.$refs["addForm"].resetFields();
+				} else { //验证未通过
+					//恢复按钮
+					that.isDisabled = false;
+					return false;
+				}
+			});
+		},
+		// 取消提交增加表单
+		addCancel(){
+			this.addFormVisible = false;
+			this.$refs["addForm"].resetFields();
+			//还原
+			this.addForm = { 
+				username: "",
+				password: "",
+				confirm: "",
+				type: 0,
+				tel: "",
+				email: "",
+				class: ""
+			}
+		},
+		// 向编辑表单中填充数据
+		openEdit(scope){
+			//填充数据
+			let index = scope.$index;
+			this.editForm = JSON.parse(JSON.stringify(this.accountData[index]));
 
-          //恢复按钮
-          that.isDisabled = false;
-          //停止加载
-          that.isLoading = false;
-          //关闭表单
-          that.addFormVisible = false;
-          this.$refs["addForm"].resetFields();
-        } else { //验证未通过
-          //恢复按钮
-          that.isDisabled = false;
-          return false;
-        }
-      });
-    },
-    // 取消提交增加表单
-    addCancel(){
-      this.addFormVisible = false;
-      this.$refs["addForm"].resetFields();
-      //还原
-      this.addForm = { 
-        username: "",
-        password: "",
-        confirm: "",
-        type: 0,
-        tel: "",
-        email: "",
-        class: ""
-      }
-    },
-    // 向编辑表单中填充数据
-    openEdit(scope){
-      //填充数据
-      let index = scope.$index;
-      this.editForm = JSON.parse(JSON.stringify(this.accountData[index]));
+			//变更数据格式，便于验证表单正确性
+			this.editForm.tel = +this.editForm.tel;
 
-      //变更数据格式，便于验证表单正确性
-      this.editForm.tel = +this.editForm.tel;
+			this.updateIndex = index;
+			this.editFormVisible = true;
+		},
+		// 提交编辑表单
+		editSubmit(formName){
+			//禁用按钮
+			this.isDisabled = true;
+			let that = this;
+			let data = this.editForm;
 
-      this.updateIndex = index;
-      this.editFormVisible = true;
-    },
-    // 提交编辑表单
-    editSubmit(formName){
-      //禁用按钮
-      this.isDisabled = true;
-      let that = this;
-      let data = this.editForm;
+			this.$refs[formName].validate((valid) => {
+				if (valid) { //验证通过
+				// 【网络请求】修改用户，返回修改后的用户
+				// 请求类型：PUT
+				// 参数：token: string, data：JSON
+				// {
+				//   username：string
+				//   password: string
+				//   type：int
+				//   tel：int
+				//   email：string
+				//   class：int
+				// }
+				// 返回值：data：JSON
+				// {
+				//   username：string
+				//   type：int
+				//   tel：int
+				//   email：string
+				//   class：int
+				// }
 
-      this.$refs[formName].validate((valid) => {
-        if (valid) { //验证通过
-          // 【网络请求】修改用户，返回修改后的用户
-          // 请求类型：PUT
-          // 参数：token: string, data：JSON
-          // {
-          //   username：string
-          //   password: string
-          //   type：int
-          //   tel：int
-          //   email：string
-          //   class：int
-          // }
-          // 返回值：data：JSON
-          // {
-          //   username：string
-          //   type：int
-          //   tel：int
-          //   email：string
-          //   class：int
-          // }
+				//恢复按钮
+				that.isDisabled = false;
+				//停止加载
+				that.isLoading = false;
+				//关闭表单
+				that.editFormVisible = false; 
 
-          //恢复按钮
-          that.isDisabled = false;
-          //停止加载
-          that.isLoading = false;
-          //关闭表单
-          that.editFormVisible = false; 
-
-        } else {
-          //恢复按钮
-          that.isDisabled = false;
-          return false;
-        }
-      })
-    },
-    // 取消提交编辑表单
-    editCancel(){
-      this.editFormVisible = false;
-      this.$refs["editForm"].resetFields();
-    },
-    // 提交导入表单
-    importSubmit(formName){
-      //禁用按钮
-      this.isDisabled = true;
-      let that = this;
-      let data = this.importForm;
-
-      this.$refs[formName].validate((valid) => {
-        if (valid) { //验证通过
-          // 【网络请求】批量导入用户，返回导入的数据
-          // 请求类型：POST
-          // 参数：token: string, data：JSON
-          // {
-          //   fileId：string
-          //   password: string
-          // }
-          // 返回值：data：JSON array
-          // [{
-          //   username：string
-          //   type：int
-          //   tel：int
-          //   email：string
-          //   class：int
-          // }]
-
-          //恢复按钮
-          that.isDisabled = false;
-          //停止加载
-          that.isLoading = false;
-          //关闭表单
-          that.editFormVisible = false; 
-
-        } else {
-          //恢复按钮
-          that.isDisabled = false;
-          return false;
-        }
-      })
-    },
-    // 取消提交导入表单
-    importCancel(){
-      this.importFormVisible = false;
-      this.$refs["importForm"].resetFields();
-      //还原
-      this.addForm = { 
-        fileId: "",
-        password: "",
-        confirm: ""
-      }
-    },
-    // 下载模板文件
-    download(){
-      // 【网络请求】下载模板文件
-      // 请求类型：GET
-      // 参数：无
-      // 返回值：无
-    }
-  },
-  // 初始化数据
-  created: function(){
-    // 【网络请求】请求学生类型的用户数据
-    // 请求类型：GET
-    // 参数：type：0
-    // 返回值：data：JSON array
-    // [{
-    //   username：string
-    //   type：int
-    //   tel：int
-    //   email：string
-    //   class：int
-    // }]
-  }
+				} else {
+				//恢复按钮
+				that.isDisabled = false;
+				return false;
+				}
+			})
+		},
+		// 取消提交编辑表单
+		editCancel(){
+			this.editFormVisible = false;
+			this.$refs["editForm"].resetFields();
+		},
+  	},
+  	mounted() {
+		this.downloadURL = this.URL + "model.xlsx";
+		this.uploadURL = this.URL + "api/auth/import/students";
+		this.uploadHeaders = {
+			Authorization: 'Bearer  ' + localStorage.getItem("token"),
+		};
+	},
 }
 </script>
 

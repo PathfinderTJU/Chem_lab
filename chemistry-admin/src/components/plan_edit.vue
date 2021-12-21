@@ -6,7 +6,7 @@
         </div>
         <!-- 表单 -->
         <div class="table_block">
-             <el-form ref="addForm" :model="addForm" label-position="top" label-width="100px" :rules="addRules" v-loading="isLoading">
+             <el-form ref="addForm" :model="addForm" label-position="top" label-width="100px" :rules="addRules" v-loading="isLoading" element-loading-text="生成预约票中请耐心等待">
                 <el-form-item label="选择设备" prop="devices">
                     <el-checkbox :indeterminate="isIndeterminate" v-model="checkAll" @change="checkAllChange">全选</el-checkbox>
                     <el-checkbox-group v-model="addForm.devices" @change="deviceChange">
@@ -53,26 +53,7 @@ export default {
         };
 
         return{
-            deviceData: [
-                {
-                    id: 1,
-                    name: "精馏设备1", 
-                    type:0,
-                    param: []
-                },
-                {
-                    id: 2,
-                    name: "化工传热设备1", 
-                    type:2,
-                    param: []
-                },
-                {
-                    id: 3,
-                    name: "化工传热设备2", 
-                    type:2,
-                    param: []
-                }
-            ], // 设备信息
+            deviceData: [], // 设备信息
             planData: [], // 开放计划信息
             types: ["精馏", "吸收-解吸", "化工传热", "流动过程"], //设备类型显示字符
             weekdays: ["星期一","星期二","星期三","星期四","星期五","星期六","星期日"], //星期显示字符
@@ -251,10 +232,42 @@ console.log(err);
                 return false;
             });
         },
-        // 未完成：等待接口
         // 获取设备列表
         getDevices(){
-
+            fetch(this.URL + "api/resources/", {
+                method: 'GET',
+                headers: {
+                    Authorization: 'Bearer  ' + localStorage.getItem("token") 
+                }
+            }).then(res => res.json()).then(res => {
+                if (res.success){
+                    this.deviceData = res.data;
+                }else{
+                    if (res.status === 402){
+                        this.$message({
+                            message: "登录已过期",
+                            type: 'error'
+                        })
+                        this.$router.push("/login");
+                    }else if(res.status === 401){
+                        this.$message({
+                            message: "没有相关权限",
+                            type: 'error'
+                        })
+                    }else{
+                        this.$message({
+                            message: "未知错误" + res.status,
+                            type: 'error'
+                        })
+                    }
+                }
+            }).catch(err => {
+                this.$message({
+                    message: "加载失败，服务器出错" + err,
+                    type: 'error'
+                })
+                return false;
+            });
         }
     },
     mounted(){

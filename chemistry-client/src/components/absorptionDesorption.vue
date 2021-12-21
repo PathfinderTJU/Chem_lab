@@ -72,7 +72,8 @@ export default {
     data(){
         return{
             ticketId: 1,
-            endTime: "",
+            endTime: "12:56",
+            snEndTime: [""],
             params_show:{ //显示的数据
                 'f3': '---',
                 'f4': '---',
@@ -110,8 +111,8 @@ export default {
             nowController: "", //当前操作者
             applyDisabled: false, //申请令牌禁用
             releaseDisabled: true, //释放令牌禁用
-            switchColor: "#E6A23C",
-            options_show: {
+            switchColor: "#E6A23C", //齿轮颜色
+            options_show: { //操作选项数据
                 "lixin1": {
                     id: 1,
                     name: '离心泵1频率',
@@ -210,8 +211,8 @@ export default {
             dataBuffer: "", //数据区缓存
             switchBuffer: "", //开关区缓存
             messages: [], //聊天记录数据
-            yemianHeight: 0,
-            haveNewMsg: false //聊天区是否有新消息,
+            haveNewMsg: false, //聊天区是否有新消息,
+            timeChecked: false // 是否发送过到时警告了
         }
     },
     methods: {
@@ -226,6 +227,7 @@ export default {
             }).then(res => res.json()).then(res => {
                 if(res.success){
                     let data = res.data;
+                    console.log(data);
                     this.endTime = data;
                 }else{
                     if (res.status === 402){
@@ -251,7 +253,7 @@ export default {
         // 发送聊天内容
         sendBuffer(){
             let requestData = {
-                username: this.userName,
+                username: this.userInfo.userName,
                 message: this.buffer
             };
 
@@ -266,7 +268,7 @@ export default {
             }).then(res => res.json()).then(res => {
                 if(res.success){
                     this.messages.push({
-                        username: this.userName,
+                        username: this.userInfo.userName,
                         message: this.buffer
                     });
 
@@ -332,7 +334,7 @@ export default {
         applyToken(){
             fetch(this.URL + '/api/experiementing/' + this.ticketId + 
                 '/applyToken?ticketId=' + this.ticketId + 
-                "&name=" + this.userName, {
+                "&name=" + this.userInfo.userName, {
                 method: 'POST',
                 headers: {
                     Authorization: 'Bearer  ' + localStorage.getItem("token") 
@@ -343,7 +345,7 @@ export default {
                         message: "已获得操作权",
                         type: 'success'
                     })
-                    this.nowController = this.userName;
+                    this.nowController = this.userInfo.userName;
                     this.applyDisabled = true;
                     this.releaseDisabled = false;
                 }else{
@@ -381,7 +383,7 @@ export default {
             }).then(() => {
                 fetch(this.URL + '/api/experiementing/' + this.ticketId + 
                     '/releaseToken?ticketId=' + this.ticketId + 
-                    "&name=" + this.userName, {
+                    "&name=" + this.userInfo.userName, {
                     method: 'POST',
                     headers: {
                         Authorization: 'Bearer  ' + localStorage.getItem("token") 
@@ -428,7 +430,7 @@ export default {
 
             fetch(this.URL + '/api/experiementing/' + this.ticketId + 
                 '/?ticketId=' + this.ticketId +
-                '&name=' + this.userName, {
+                '&name=' + this.userInfo.userName, {
                 method: 'POST',
                 headers: {
                     Authorization: 'Bearer  ' + localStorage.getItem("token"),
@@ -479,7 +481,7 @@ export default {
 
             fetch(this.URL + '/api/experiementing/' + this.ticketId + 
                 '/?ticketId=' + this.ticketId +
-                '&name=' + this.userName, {
+                '&name=' + this.userInfo.userName, {
                 method: 'POST',
                 headers: {
                     Authorization: 'Bearer  ' + localStorage.getItem("token"),
@@ -563,7 +565,7 @@ export default {
 
                     //更新当前操作者状态
                     this.nowController = nowToken;
-                    if (this.nowController === this.userName){
+                    if (this.nowController === this.userInfo.userName){
                         this.applyDisabled = true;
                         this.releaseDisabled = false;
                     }else{
@@ -631,6 +633,26 @@ export default {
                 return false;
             })
         },
+        // 检查是否到时
+        checkTime(){ 
+            if (this.timeChecked){ // 只警告一次
+                return false;
+            }else{
+                let now = new Date();
+                let nowTime = now.getTime();
+
+                let endStr = now.toLocaleDateString() + " " + this.endTime;
+                let endTime = new Date(endStr);
+                endTime = endTime.getTime();
+
+                if (endTime - nowTime <= 10 * 60){
+                    this.$alert('剩余实验时间：10分钟', '时间提示', {
+                        confirmButtonText: '确定',
+                    });
+                    this.timeChecked = true;
+                }
+            }
+        },
         // 退出实验
         exit(){
            this.$confirm('确认退出实验吗?', '提示', {
@@ -643,7 +665,7 @@ export default {
         },
         // 监听浏览器关闭事件
         beforeunloadHandler(e){
-            if (this.nowController === this.userName){
+            if (this.nowController === this.userInfo.userName){
                 this.$message({
                     message: "请释放操作权再离开！！！",
                     type: 'error'
@@ -671,11 +693,12 @@ export default {
         // 循环刷新数据ing...
         // setInerval直接使用会卡死
         window.setInterval(() => {
-            setTimeout(this.refreshMsg, 0)
+            setTimeout(this.refreshMsg, 0);
+            setTimeout(this.checkTime, 0);
         }, 5000);
 
         window.setInterval(() => {
-            setTimeout(this.refreshData, 0)
+            setTimeout(this.refreshData, 0);
         }, 1000);
     },
     destroyed(){

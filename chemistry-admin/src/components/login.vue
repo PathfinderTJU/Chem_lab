@@ -58,6 +58,7 @@ export default {
                     if (res.success){
                         if (res.data.Role === "ROLE_admin"){
                             localStorage.setItem("token", res.data.token);
+                            this.userInfo.userName = request.username;
                             this.$message({
                                 message: "登录成功",
                                 type: 'success'

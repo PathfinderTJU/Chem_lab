@@ -41,14 +41,7 @@ export default {
             endDate: null,
             weekDays: ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"], //填充的星期
             classes: ["第一节", "第二节", "第三节", "第四节", "第五节", "第六节", "第七节"], //节数
-            devices: [ //设备列表
-                {
-                    id: 1,
-                    name: "精馏设备1", 
-                    type:0,
-                    param: []
-                }
-            ],
+            devices: [], //设备列表
             reserveData: []//"date为标准时间YYYY-MM-DD"
         }
     },
@@ -94,12 +87,45 @@ export default {
         },
         // 改变设备，刷新数据
         changeDevice(value){
+            this.reserveData.splice(0, this.reserveData.length);
             this.getReserve(value);
         },
-        // 未完成，缺少接口
         // 获取设备信息
         getDevice(){
-            
+            fetch(this.URL + "api/resources/", {
+                method: 'GET',
+                headers: {
+                    Authorization: 'Bearer  ' + localStorage.getItem("token") 
+                }
+            }).then(res => res.json()).then(res => {
+                if (res.success){
+                    this.devices = res.data;
+                }else{
+                    if (res.status === 402){
+                        this.$message({
+                            message: "登录已过期",
+                            type: 'error'
+                        })
+                        this.$router.push("/login");
+                    }else if(res.status === 401){
+                        this.$message({
+                            message: "没有相关权限",
+                            type: 'error'
+                        })
+                    }else{
+                        this.$message({
+                            message: "未知错误" + res.status,
+                            type: 'error'
+                        })
+                    }
+                }
+            }).catch(err => {
+                this.$message({
+                    message: "加载失败，服务器出错" + err,
+                    type: 'error'
+                })
+                return false;
+            });
         },
         // 获取startDate到endDate之间的预约数据
         getReserve(id){
