@@ -218,7 +218,7 @@ export default {
     methods: {
         // 获取结束时间
         getEndTime(){
-            fetch(this.URL + '/api/experiementing/' + this.ticketId + 
+            fetch(this.URL + 'api/experiementing/' + this.ticketId + 
                 '/endTime?ticketId=' + this.ticketId, {
                 method: 'GET',
                 headers: {
@@ -227,7 +227,6 @@ export default {
             }).then(res => res.json()).then(res => {
                 if(res.success){
                     let data = res.data;
-                    console.log(data);
                     this.endTime = data;
                 }else{
                     if (res.status === 402){
@@ -257,7 +256,7 @@ export default {
                 message: this.buffer
             };
 
-            fetch(this.URL + '/api/experiementing/' + this.ticketId + 
+            fetch(this.URL + 'api/experiementing/' + this.ticketId + 
                 '/boarding?ticketId=' + this.ticketId, {
                 method: 'POST',
                 headers: {
@@ -332,7 +331,7 @@ export default {
         },
         // 申请令牌
         applyToken(){
-            fetch(this.URL + '/api/experiementing/' + this.ticketId + 
+            fetch(this.URL + 'api/experiementing/' + this.ticketId + 
                 '/applyToken?ticketId=' + this.ticketId + 
                 "&name=" + this.userInfo.userName, {
                 method: 'POST',
@@ -381,7 +380,7 @@ export default {
                 cancelButtonText: '取消',
                 type: 'warning'
             }).then(() => {
-                fetch(this.URL + '/api/experiementing/' + this.ticketId + 
+                fetch(this.URL + 'api/experiementing/' + this.ticketId + 
                     '/releaseToken?ticketId=' + this.ticketId + 
                     "&name=" + this.userInfo.userName, {
                     method: 'POST',
@@ -428,7 +427,7 @@ export default {
                 paramValue: this.dataBuffer + ""
             }
 
-            fetch(this.URL + '/api/experiementing/' + this.ticketId + 
+            fetch(this.URL + 'api/experiementing/' + this.ticketId + 
                 '/?ticketId=' + this.ticketId +
                 '&name=' + this.userInfo.userName, {
                 method: 'POST',
@@ -479,7 +478,7 @@ export default {
                 paramValue: Number(!this.switchBuffer)
             }
 
-            fetch(this.URL + '/api/experiementing/' + this.ticketId + 
+            fetch(this.URL + 'api/experiementing/' + this.ticketId + 
                 '/?ticketId=' + this.ticketId +
                 '&name=' + this.userInfo.userName, {
                 method: 'POST',
@@ -552,7 +551,7 @@ export default {
         },
         // 刷新数据列表
         refreshData(){
-            fetch(this.URL + '/api/experiementing/' + this.ticketId + 
+            fetch(this.URL + 'api/experiementing/' + this.ticketId + 
                 '/?ticketId=' + this.ticketId, {
                 method: 'GET',
                 headers: {
@@ -599,7 +598,7 @@ export default {
         },
         // 刷新留言板信息
         refreshMsg(){
-            fetch(this.URL + '/api/experiementing/' + this.ticketId + 
+            fetch(this.URL + 'api/experiementing/' + this.ticketId + 
                 '/boarding?ticketId=' + this.ticketId, {
                 method: 'GET',
                 headers: {
@@ -682,7 +681,6 @@ export default {
     mounted() {
         window.addEventListener('beforeunload', e => this.beforeunloadHandler(e));
         this.nowVideo = this.cams[0];
-        localStorage.setItem("token", "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiIyMDIxMjQ0MTIyIiwiY3JlYXRlZCI6MTYzODc1OTA5NDQ4NSwiZXhwIjoxNjM5MzYzODk0fQ.kNiXuMhJXNE4XLarBODO3qILY-8mqjAReWqZNFZu98pmT4Cl5shwBVu_WE0LnLDVNifiqed70epBKaDd0dN97A")
 
         //初始获取数据
         this.getEndTime();
