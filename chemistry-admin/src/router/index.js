@@ -10,6 +10,7 @@ import plan_edit from '@/components/plan_edit'
 import announcement from '@/components/announcement'
 import empty from '@/components/empty'
 import plan_reserve from '@/components/plan_reserve'
+import password from '@/components/password'
 
 Vue.use(Router)
 
@@ -57,9 +58,13 @@ export default new Router({
                     path: 'plan_reserve',
                     component: plan_reserve
                 },
+                // {
+                //     path: 'announcement',
+                //     component: announcement
+                // },
                 {
-                    path: 'announcement',
-                    component: announcement
+                    path: 'password',
+                    component: password
                 },
                 {
                     path: '*',

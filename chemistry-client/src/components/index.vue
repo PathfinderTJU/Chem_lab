@@ -14,17 +14,17 @@
                 <el-aside width="20%" class="aside">
                     <el-menu :default-active="$route.path" class="el-menu-vertical-demo" router>
                         <el-menu-item index="/index/reserve">
-                            <span slot="title" v-if="userInfo.userType">预约试验</span>
+                            <span slot="title" v-if="userType">预约实验</span>
                             <span slot="title" v-else>预约情况</span>
                         </el-menu-item>
-                        <el-menu-item index="/index/my_reserve" v-if="userInfo.userType">
+                        <el-menu-item index="/index/my_reserve" v-if="userType">
                             <span slot="title">我的预约</span>
                         </el-menu-item>
                         <el-menu-item index="/index/enter">
                             <span slot="title">进入实验</span>
                         </el-menu-item>
                         <el-menu-item index="/index/mine">
-                            <span slot="title" v-if="userInfo.userType">我的实验</span>
+                            <span slot="title" v-if="userType">我的实验</span>
                             <span slot="title" v-else>学生实验</span>
                         </el-menu-item>
                         <el-menu-item index="/index/password">
@@ -44,15 +44,24 @@
 <script>
 export default {
     name: 'index',
+    data() {
+        return {
+            userType: ""
+        }
+    },
     methods: {
         logout(){
             localStorage.setItem("token", "");
+            sessionStorage.setItem("userName", "");
             this.$message({
                 message: "已退出",
                 type: 'success'
             })
             this.$router.replace("/login");
         }
+    },
+    created() {
+        this.userType = localStorage.getItem("userType") === "true"; //localStorage存入的数据会被转换成字符串...
     },
 }
 </script>

@@ -6,8 +6,8 @@
         </div>
         <!-- 表单 -->
         <div class="table_block">
-             <el-form ref="addForm" :model="addForm" label-position="top" label-width="100px" :rules="addRules" v-loading="isLoading" element-loading-text="生成预约票中请耐心等待">
-                <el-form-item label="选择设备" prop="devices">
+             <el-form ref="addForm" :model="addForm" label-position="top" label-width="100px" :rules="addRules" v-loading="isLoading" element-loading-text="生成预约票中，请耐心等待...">
+                <el-form-item id="devices_choice" label="选择设备" prop="devices">
                     <el-checkbox :indeterminate="isIndeterminate" v-model="checkAll" @change="checkAllChange">全选</el-checkbox>
                     <el-checkbox-group v-model="addForm.devices" @change="deviceChange">
                         <el-checkbox v-for="item in deviceData" :label="item.id" :key="item.id">{{types[item.type]}}: {{item.name}}</el-checkbox>
@@ -55,7 +55,12 @@ export default {
         return{
             deviceData: [], // 设备信息
             planData: [], // 开放计划信息
-            types: ["精馏", "吸收-解吸", "化工传热", "流动过程"], //设备类型显示字符
+            types: {
+                "A": "精馏", 
+                "B": "吸收-解吸", 
+                "C": "化工传热", 
+                "D": "流动过程"
+            }, //设备类型显示字符
             weekdays: ["星期一","星期二","星期三","星期四","星期五","星期六","星期日"], //星期显示字符
             addForm: { // 表单
                 devices: [],
@@ -307,5 +312,10 @@ div {
 
 .add_footer{
     padding-top: 10px;
+}
+
+#devices_choice{
+    height: 120px;
+    overflow: auto;
 }
 </style>

@@ -252,7 +252,7 @@ export default {
         // 发送聊天内容
         sendBuffer(){
             let requestData = {
-                username: this.userInfo.userName,
+                username: sessionStorage.getItem("userName"),
                 message: this.buffer
             };
 
@@ -267,7 +267,7 @@ export default {
             }).then(res => res.json()).then(res => {
                 if(res.success){
                     this.messages.push({
-                        username: this.userInfo.userName,
+                        username: sessionStorage.getItem("userName"),
                         message: this.buffer
                     });
 
@@ -333,7 +333,7 @@ export default {
         applyToken(){
             fetch(this.URL + 'api/experiementing/' + this.ticketId + 
                 '/applyToken?ticketId=' + this.ticketId + 
-                "&name=" + this.userInfo.userName, {
+                "&name=" + sessionStorage.getItem("userName"), {
                 method: 'POST',
                 headers: {
                     Authorization: 'Bearer  ' + localStorage.getItem("token") 
@@ -344,7 +344,7 @@ export default {
                         message: "已获得操作权",
                         type: 'success'
                     })
-                    this.nowController = this.userInfo.userName;
+                    this.nowController = sessionStorage.getItem("userName");
                     this.applyDisabled = true;
                     this.releaseDisabled = false;
                 }else{
@@ -382,7 +382,7 @@ export default {
             }).then(() => {
                 fetch(this.URL + 'api/experiementing/' + this.ticketId + 
                     '/releaseToken?ticketId=' + this.ticketId + 
-                    "&name=" + this.userInfo.userName, {
+                    "&name=" + sessionStorage.getItem("userName"), {
                     method: 'POST',
                     headers: {
                         Authorization: 'Bearer  ' + localStorage.getItem("token") 
@@ -429,7 +429,7 @@ export default {
 
             fetch(this.URL + 'api/experiementing/' + this.ticketId + 
                 '/?ticketId=' + this.ticketId +
-                '&name=' + this.userInfo.userName, {
+                '&name=' + sessionStorage.getItem("userName"), {
                 method: 'POST',
                 headers: {
                     Authorization: 'Bearer  ' + localStorage.getItem("token"),
@@ -480,7 +480,7 @@ export default {
 
             fetch(this.URL + 'api/experiementing/' + this.ticketId + 
                 '/?ticketId=' + this.ticketId +
-                '&name=' + this.userInfo.userName, {
+                '&name=' + sessionStorage.getItem("userName"), {
                 method: 'POST',
                 headers: {
                     Authorization: 'Bearer  ' + localStorage.getItem("token"),
@@ -564,7 +564,7 @@ export default {
 
                     //更新当前操作者状态
                     this.nowController = nowToken;
-                    if (this.nowController === this.userInfo.userName){
+                    if (this.nowController === sessionStorage.getItem("userName")){
                         this.applyDisabled = true;
                         this.releaseDisabled = false;
                     }else{
@@ -664,7 +664,7 @@ export default {
         },
         // 监听浏览器关闭事件
         beforeunloadHandler(e){
-            if (this.nowController === this.userInfo.userName){
+            if (this.nowController === sessionStorage.getItem("userName")){
                 this.$message({
                     message: "请释放操作权再离开！！！",
                     type: 'error'

@@ -80,17 +80,20 @@ export default {
                         if (res.success){
                             if (that.type && res.data.Role === "ROLE_stu"){
                                 localStorage.setItem("token", res.data.token);
-                                this.userInfo.userName = request.username;
-                                this.userInfo.userType = true;
+                                sessionStorage.setItem("userName", request.username);
+                                localStorage.setItem("userType", true); // 不能被用户修改的地方
+
                                 this.$message({
                                     message: "登录成功",
                                     type: 'success'
                                 })
                                 this.$router.push("/index");
                             }else if (!that.type && res.data.Role === "ROLE_teacher"){
+                                console.log(1);
                                 localStorage.setItem("token", res.data.token);
-                                this.userInfo.userName = request.username;
-                                this.userInfo.userType = false;
+                                sessionStorage.setItem("userName", request.username);
+                                localStorage.setItem("userType", false);
+
                                 this.$message({
                                     message: "登录成功",
                                     type: 'success'
@@ -134,7 +137,42 @@ export default {
                 this.type = !this.type
             }
         }
-    }
+    },
+    mounted() {
+        // 检查是否已经登录过了
+        fetch(this.URL + "api/auth/whoami", {
+            method: 'GET',
+            headers: {
+                Authorization: 'Bearer  ' + localStorage.getItem("token")
+            }
+        }).then(res => res.json()).then(res => {
+            if (res.success){
+                // 必须是学生或教师账户，防止用户通过修改token绕过登录
+                if (res.data.authorities[0].authority === "ROLE_stu" || res.data.authorities[0].authority === "ROLE_teacher"){
+                    this.$message({
+                        message: "已登录",
+                        type: 'success'
+                    })
+                    // 一次会话后session会被清空，需要重新设置
+                    sessionStorage.setItem("userName", res.data.principal.user.username);
+                    this.$router.push("/index");
+                }else{
+                    this.$message({
+                        message: "无效的用户类型",
+                        type: 'error'
+                    })
+                }
+            }else{
+                return false;
+            }
+        }).catch(err => {
+            this.$message({
+                message: "加载失败，服务器出错" + err,
+                type: 'error'
+            })
+            return false;
+        });  
+    },
 }
 </script>
 

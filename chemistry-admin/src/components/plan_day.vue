@@ -40,7 +40,7 @@
                     <el-input v-model="editForm.name" maxLength="20"></el-input>
                 </el-form-item>
                     <div class="add_footer">
-                        <el-button type="primary" @click="editSubmit('editForm')" :disabled="isDisabled">确定</el-button>
+                        <el-button type="primary" @click="editSubmit('editForm')">确定</el-button>
                         <el-button @click="editCancel">取消</el-button>
                     </div>
             </el-form>
@@ -56,7 +56,7 @@
                     <el-input v-model="timeForm.end" maxLength="20"></el-input>
                 </el-form-item>
                     <div class="add_footer">
-                        <el-button type="primary" @click="timeSubmit('timeForm')" :disabled="isDisabled">确定</el-button>
+                        <el-button type="primary" @click="timeSubmit('timeForm')">确定</el-button>
                         <el-button @click="timeCancel">取消</el-button>
                     </div>
             </el-form>
@@ -129,13 +129,13 @@ export default {
                 {value: 5, label:"第六节", start:"18:30", end:"20:00"},
                 {value: 6, label:"第七节", start:"20:25", end:"21:55"}
             ],
+            updateIndex: 0,
             newName: "", //新名称,
             editFormVisible: false, //控制编辑名称弹窗
             timeFormVisible: false, //控制编辑时间弹窗
             editForm: {}, //编辑名称表单
             timeForm: {}, //编辑时间表单
-            isLoading: false,
-            isDisabled: false,
+            isLoading: false, //控制loading
             editRules: {
                 name: [
                     {required: true, message: "请输入名称", trigger: 'blur'}
@@ -193,6 +193,7 @@ export default {
                         message: "添加成功",
                         type: 'success'
                     })
+                    this.newName = ""; // 还原表单
                 }else{
                     if (res.status === 402){
                         this.$message({
@@ -396,33 +397,71 @@ export default {
             this.editFormVisible = false;
             this.$refs["editForm"].resetFields();
         },  
-        // 修改表头对应时间
+        // 打开修改表头对应时间表单
         changeTime(column){
             let index = column.index;
+            this.updateIndex = index;
             this.timeFormVisible = true;
             this.timeForm = JSON.parse(JSON.stringify(this.time[index]));
         },
         // 未完成，等接口
         // 提交修改时间表单
         timeSubmit(formName){
-            //禁用按钮
-            this.isDisabled = true;
-            let that = this;
             let data = this.timeForm;
+            let request = {
+
+            };
 
             this.$refs[formName].validate((valid) => {
                 if (valid) { //验证通过
-                //恢复按钮
-                that.isDisabled = false;
-                //停止加载
-                that.isLoading = false;
-                //关闭表单
-                that.timeFormVisible = false; 
+                    this.isLoading = true;
 
+                    fetch(this.URL + "api/daily-open-plans/items?sn=" + this.updateIndex, {
+                        method: 'PUT',
+                        headers: {
+                            Authorization: 'Bearer  ' + localStorage.getItem("token"),
+                            'content-type': 'application/json'
+                        },
+                        body: JSON.stringify(request)
+                    }).then(res => res.json()).then(res => {
+                        this.isLoading = false;
+
+                        if (res.success){
+                            this.getTime();
+                            this.$message({
+                                message: "修改成功",
+                                type: 'success'
+                            })
+                            this.timeFormVisible = false;
+                        }else{
+                            if (res.status === 402){
+                                this.$message({
+                                    message: "登录已过期",
+                                    type: 'error'
+                                })
+                                this.$router.push("/login");
+                            }else if(res.status === 401){
+                                this.$message({
+                                    message: "没有相关权限",
+                                    type: 'error'
+                                })
+                            }else{
+                                this.$message({
+                                    message: "未知错误" + res.status,
+                                    type: 'error'
+                                })
+                            }
+                        }
+                    }).catch(err => {
+                        this.isLoading = false;
+                        this.$message({
+                            message: "加载失败，服务器出错" + err,
+                            type: 'error'
+                        })
+                        return false;
+                    })                
                 } else {
-                //恢复按钮
-                that.isDisabled = false;
-                return false;
+                    return false;
                 }
             })
         },
@@ -467,9 +506,15 @@ export default {
                 })
                 return false;
             });
+        },
+        // 未完成，等接口
+        // 获取开放计划的时间段
+        getTime(){
+
         }
     },
     mounted() {
+        this.getTime();
         this.refreshData();        
     },
 }

@@ -123,7 +123,7 @@ export default {
 
             return s.join('-');
         },
-         // 全选被点击，要么从未勾选或模糊态变为选中，要么从选中变为未勾选
+        // 全选被点击，要么从未勾选或模糊态变为选中，要么从选中变为未勾选
         checkAllChange(){
             // 无论如何，都脱离了模糊态
             this.isIndeterminate = false;
@@ -135,7 +135,6 @@ export default {
                 for (let i = 0 ; i < this.devices.length ; i++){
                     this.editForm.devices.push(this.devices[i].id);
                 }
-                console.log(this.editForm);
             }else{ //全选中，变为未选中
                 this.checkAll = false;
                 this.editForm.devices = [];
@@ -243,7 +242,6 @@ export default {
                 let openResourceIds = [];
                 for (let i = 0 ; i < this.editForm.checked.length ; i++){
                     if (this.editForm.checked[i]){
-                        console.log
                         if (this.editForm.origin.includes(this.devices[i].id)){
                             closedResourceIds.push(this.devices[i].id);
                         }else{
@@ -271,7 +269,6 @@ export default {
                         if (res.success){
                             resolve();
                         }else{
-                            reject();
                             if (res.status === 402){
                                 this.$message({
                                     message: "登录已过期",
@@ -289,6 +286,7 @@ export default {
                                     type: 'error'
                                 })
                             }
+                            reject();
                         }
                     }).catch(err => {
                         reject();
@@ -534,8 +532,8 @@ export default {
             for (let i = 0 ; i < this.devices.length ; i++){
                 let id = this.devices[i].id;
                 let requestData = {
-                    startDate: this.startDate.toLocaleDateString(),
-                    endDate: this.endDate.toLocaleDateString()
+                    startDate: this.formateDate(this.startDate),
+                    endDate: this.formateDate(this.endDate)
                 }
 
                 let p = new Promise((resolve, reject) => {

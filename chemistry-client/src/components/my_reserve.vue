@@ -42,58 +42,91 @@ export default {
         return{
             classes: ["第一节", "第二节", "第三节", "第四节", "第五节", "第六节", "第七节"], //节数
             types: ["精馏", "吸收-解吸", "化工传热", "流动过程"], //设备类型显示字符
-            reserveData: [
-                {
-                    reserveId: 0,
-                    date: "2021-11-20",
-                    class: 0,
-                    deviceType: 2,
-                    deviceName: "传热设备1"
-                }
-            ]
+            reserveData: []
         }
     },
     methods: {
         // 取消预约
         cancel(scope){
             let id = this.reserveData[scope.$index].reserveId;
+            fetch(this.URL + "api/booking/" + id, {
+                method: 'DELETE',
+                headers: {
+                    Authorization: 'Bearer  ' + localStorage.getItem("token") 
+                }
+            }).then(res => res.json()).then(res => {
+                if (res.success){
+                    this.$message({
+                        message: "取消成功",
+                        type: 'success'
+                    })
+                }else{
+                    if (res.status === 402){
+                        this.$message({
+                            message: "登录已过期",
+                            type: 'error'
+                        })
+                        this.$router.push("/login");
+                    }else if(res.status === 401){
+                        this.$message({
+                            message: "没有相关权限",
+                            type: 'error'
+                        })
+                    }else{
+                        this.$message({
+                            message: "未知错误" + res.status,
+                            type: 'error'
+                        })
+                    }
+                }
+            }).catch(err => {
+                this.$message({
+                    message: "取消失败，服务器出错" + err,
+                        type: 'error'
+                    })
+                return false;
+            });
+        },
+        // 获取预约信息
+        getReserve(){
+            fetch(this.URL + "api/booking/by-user/" + sessionStorage.getItem("userName"), {
+                method: 'GET',
+                headers: {
+                    Authorization: 'Bearer  ' + localStorage.getItem("token") 
+                }
+            }).then(res => res.json()).then(res => {
+                if (res.success){
+                    this.reserveData = res.data;
+                }else{
+                    if (res.status === 402){
+                        this.$message({
+                            message: "登录已过期",
+                            type: 'error'
+                        })
+                        this.$router.push("/login");
+                    }else if(res.status === 401){
+                        this.$message({
+                            message: "没有相关权限",
+                            type: 'error'
+                        })
+                    }else{
+                        this.$message({
+                            message: "未知错误" + res.status,
+                            type: 'error'
+                        })
+                    }
+                }
+            }).catch(err => {
+                this.$message({
+                    message: "加载失败，服务器出错" + err,
+                        type: 'error'
+                    })
+                return false;
+            });
         }
     },
     mounted() {
-        fetch(this.URL + "api/booking/by-user/" + this.userInfo.userName, {
-            method: 'GET',
-            headers: {
-                Authorization: 'Bearer  ' + localStorage.getItem("token") 
-            }
-        }).then(res => res.json()).then(res => {
-            if (res.success){
-                console.log(res);
-            }else{
-                if (res.status === 402){
-                    this.$message({
-                        message: "登录已过期",
-                        type: 'error'
-                    })
-                    this.$router.push("/login");
-                }else if(res.status === 401){
-                    this.$message({
-                        message: "没有相关权限",
-                        type: 'error'
-                    })
-                }else{
-                    this.$message({
-                        message: "未知错误" + res.status,
-                        type: 'error'
-                    })
-                }
-            }
-        }).catch(err => {
-            this.$message({
-                message: "加载失败，服务器出错" + err,
-                    type: 'error'
-                })
-            return false;
-        });
+        this.getReserve();
     },
 }
 </script>

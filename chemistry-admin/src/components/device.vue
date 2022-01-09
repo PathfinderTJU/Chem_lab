@@ -178,7 +178,6 @@ export default {
                 return false;
             });
         },
-		// 未完成：接口不全
 		// 提交增加表单
         addSubmit(formName){
             let data = this.addForm;
@@ -273,7 +272,6 @@ export default {
             this.updateIndex = index;
             this.editFormVisible = true;
         },
-		// 未完成：接口不全
         // 提交编辑表单
         editSubmit(formName){
 			let data = this.editForm;

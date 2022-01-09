@@ -146,8 +146,8 @@ export default {
             }            
             
             let requestData = {
-                startDate: this.startDate.toLocaleDateString(),
-                endDate: this.endDate.toLocaleDateString()
+                startDate: this.formateDate(this.startDate),
+                endDate: this.formateDate(this.endDate)
             }
 
             fetch(this.URL + "api/tickets/by-resource/" + id + "?resourceId=" + id 

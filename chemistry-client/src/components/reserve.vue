@@ -4,7 +4,7 @@
         <div class="title_block">
             <!-- 标题 -->
             <div class="left_block">
-                <div class="title" v-if="userInfo.userType">预约实验</div>
+                <div class="title" v-if="userType">预约实验</div>
                 <div class="title" v-else>预约情况</div>
                 <el-select v-model="nowType" @change="changeDevice">
                     <el-option v-for="item in devices" :key="item.id" :label="item.name" :value="item.id"></el-option>
@@ -17,7 +17,7 @@
             </div>
         </div>
         <!-- 学生：表格 -->
-        <div class="table_block" v-if="userInfo.userType">
+        <div class="table_block" v-if="userType">
             <el-table :data="reserveData" border :cell-class-name="studentSetColor" @cell-click="reserve">
                 <el-table-column label="时间" width="200" align="center">
                     <template slot-scope="scope">
@@ -60,6 +60,7 @@ export default {
     name: 'reserve',
     data(){
         return{
+            userType: "",
             nowType: "",
             weekDays: ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"], //填充的星期
             classes: ["第一节", "第二节", "第三节", "第四节", "第五节", "第六节", "第七节"], //节数
@@ -145,7 +146,11 @@ export default {
             this.endDate = new Date(this.endDate.getFullYear(), this.endDate.getMonth(), this.endDate.getDate() + 7);
             this.myReserveData.splice(0, this.myReserveData.length);
             this.reserveData.splice(0, this.reserveData.length);
-            this.getReserve(this.nowType);
+            if (this.userType){
+                this.getReserve(this.nowType);
+            }else{
+                this.getStudentReserve(this.nowType);
+            }
         },
         // 上一周
         previousWeek(){
@@ -157,17 +162,26 @@ export default {
             this.endDate = new Date(this.endDate.getFullYear(), this.endDate.getMonth(), this.endDate.getDate() - 7);
             this.myReserveData.splice(0, this.myReserveData.length);
             this.reserveData.splice(0, this.reserveData.length);
-            this.getReserve(this.nowType);
+            if (this.userType){
+                this.getReserve(this.nowType);
+            }else{
+                this.getStudentReserve(this.nowType);
+            }
         },
         // 改变设备，刷新数据
         changeDevice(value){
-            this.reserveData.splice(0, this.reserveData.length);
-            // this.myReserveData.splice(0, this.myReserveData.length);
-            this.getReserve(value);
+            if (this.userType){
+                this.reserveData.splice(0, this.reserveData.length);
+                this.getReserve(value);
+            }else{
+                this.myReserveData.splice(0, this.myReserveData.length);
+                this.getStudentReserve(value);
+            }
         },
-        // 获取预约信息和自己的预约信息
+        // 学生：获取预约信息和自己的预约信息，id为设备ID
         getReserve(id){
             let temp = {};
+            let result = [];
             
             // 数据格式化用到的数组
             for (let i = 0 ; i < 7 ; i++){                                                  
@@ -175,19 +189,115 @@ export default {
                 let nowString = this.formateDate(now);
                 let open = new Array(7).fill(false);
                 let reserve = new Array(7).fill(0);
-
                 temp[nowString] = {
                     open: open,
                     reserve: reserve
-                };
-                    
+                };     
             }            
             
+            // 获取设备开放信息
+
             let requestData = {
-                startDate: this.startDate.toLocaleDateString(),
-                endDate: this.endDate.toLocaleDateString()
+                startDate: this.formateDate(this.startDate),
+                endDate: this.formateDate(this.endDate)
             }
 
+            let p1 = new Promise((resolve, reject) => {
+                fetch(this.URL + "api/tickets/by-resource/" + id + "?resourceId=" + id 
+                        + "&startDate=" + requestData.startDate + "&endDate=" + requestData.endDate, {
+                    method: 'GET',
+                    headers: {
+                        Authorization: 'Bearer  ' + localStorage.getItem("token")
+                    }
+                }).then(res => res.json()).then(res => {
+                    if (res.success){
+                        // 处理开放数据
+
+
+                        resolve();
+                    }else{
+                        if (res.status === 402){
+                            this.$message({
+                                message: "登录已过期",
+                                type: 'error'
+                            })
+                            this.$router.push("/login");
+                        }else if(res.status === 401){
+                            this.$message({
+                                message: "没有相关权限",
+                                type: 'error'
+                            })
+                        }else{
+                            this.$message({
+                                message: "未知错误" + res.status,
+                                type: 'error'
+                            })
+                        }
+                        reject();
+                    }
+                }).catch(err => {
+                    reject();
+                    this.$message({
+                        message: "加载失败，服务器出错" + err,
+                        type: 'error'
+                    })
+                    return false;
+                });
+            })
+
+            // 获取我的信息
+
+            let p2 = new Promise((resolve, reject) => {
+                fetch(this.URL + "api/booking/by-user/" + sessionStorage.getItem("userName") 
+                        + "&startDate=" + requestData.startDate + "&endDate=" + requestData.endDate, {
+                    method: 'GET',
+                    headers: {
+                        Authorization: 'Bearer  ' + localStorage.getItem("token")
+                    }
+                }).then(res => res.json()).then(res => {
+                    if (res.success){
+                        // 处理预约数据
+
+                        resolve();
+                    }else{
+                        if (res.status === 402){
+                            this.$message({
+                                message: "登录已过期",
+                                type: 'error'
+                            })
+                            this.$router.push("/login");
+                        }else if(res.status === 401){
+                            this.$message({
+                                message: "没有相关权限",
+                                type: 'error'
+                            })
+                        }else{
+                            this.$message({
+                                message: "未知错误" + res.status,
+                                type: 'error'
+                            })
+                        }
+                        reject();
+                    }
+                }).catch(err => {
+                    reject();
+                    this.$message({
+                        message: "加载失败，服务器出错" + err,
+                        type: 'error'
+                    })
+                    return false;
+                });
+            })            
+
+            // 填充数据
+            Promise.all([p1, p2]).then(() => {
+                this.reserveData = result;
+            });
+
+
+        },
+        // 教师：只获取设备开放信息
+        getStudentReserve(id){
             fetch(this.URL + "api/tickets/by-resource/" + id + "?resourceId=" + id 
                     + "&startDate=" + requestData.startDate + "&endDate=" + requestData.endDate, {
                 method: 'GET',
@@ -196,20 +306,9 @@ export default {
                 }
             }).then(res => res.json()).then(res => {
                 if (res.success){
-                    let result = res.data;
-                    for (let i = 0 ; i < result.length ; i++){
-                        temp[result[i].date].open[result[i].sn] = true;
-                        temp[result[i].date].reserve[result[i].sn] = result[i].available;
-                    }
+                    // 处理开放数据
 
-                    //修改数据结构
-                    for(let i in temp){
-                        this.reserveData.push({
-                            date: i,
-                            open: temp[i].open,
-                            reserve: temp[i].reserve
-                        });
-                    }
+
                 }else{
                     if (res.status === 402){
                         this.$message({
@@ -244,19 +343,96 @@ export default {
             let myReserve = this.myReserveData.find(function(e){
                 return e.date === date;
             })
+            let id = row.ticketId;
             
             if (myReserve.reserved[sn]){
                 this.$confirm('确认取消预约吗？' ,{
                     type: 'warning'
                 }).then(() => {
-                    
+                    fetch(this.URL + "api/booking/" + id, {
+                        method: 'DELETE',
+                        headers: {
+                            Authorization: 'Bearer  ' + localStorage.getItem("token")
+                        }
+                    }).then(res => res.json()).then(res => {
+                        if (res.success){
+                            this.$message({
+                                message: "取消预约成功",
+                                type: 'success'
+                            })
+                            // 重新加载
+                            this.getReserve(this.nowType);
+                        }else{
+                            if (res.status === 402){
+                                this.$message({
+                                    message: "登录已过期",
+                                    type: 'error'
+                                })
+                                this.$router.push("/login");
+                            }else if(res.status === 401){
+                                this.$message({
+                                    message: "没有相关权限",
+                                    type: 'error'
+                                })
+                            }else{
+                                this.$message({
+                                    message: "未知错误" + res.status,
+                                    type: 'error'
+                                })
+                            }
+                        }
+                    }).catch(err => {
+                        this.$message({
+                            message: "操作失败，服务器出错" + err,
+                            type: 'error'
+                        })
+                        return false;
+                    });                    
                 });
             }else{
                 if (row.open[sn] && row.reserve[sn] !== 3){ // 过滤掉未开放和已满
                     this.$confirm('确认要预约此时段吗？', {
                         type: 'warning'
                     }).then(() => {
-                    
+                        fetch(this.URL + "api/booking/by-ticket/" + id, {
+                            method: 'POST',
+                            headers: {
+                                Authorization: 'Bearer  ' + localStorage.getItem("token")
+                            }
+                        }).then(res => res.json()).then(res => {
+                            if (res.success){
+                                this.$message({
+                                    message: "新增预约成功",
+                                    type: 'success'
+                                })
+                                // 重新加载
+                                this.getReserve(this.nowType);
+                            }else{
+                                if (res.status === 402){
+                                    this.$message({
+                                        message: "登录已过期",
+                                        type: 'error'
+                                    })
+                                    this.$router.push("/login");
+                                }else if(res.status === 401){
+                                    this.$message({
+                                        message: "没有相关权限",
+                                        type: 'error'
+                                    })
+                                }else{
+                                    this.$message({
+                                        message: "未知错误" + res.status,
+                                        type: 'error'
+                                    })
+                                }
+                            }
+                        }).catch(err => {
+                            this.$message({
+                                message: "操作失败，服务器出错" + err,
+                                type: 'error'
+                            })
+                            return false;
+                        });                      
                     });
                 }
             }
@@ -301,6 +477,9 @@ export default {
         }
     },
     mounted() {
+        // 获取用户类型
+        this.userType = localStorage.getItem("userType") === "true";
+
         // 填充设备类型
         this.getDevice();
         // 填充时间
@@ -375,6 +554,7 @@ div {
 
 .table_block{
   height: 70%;
+  user-select: none;
 }
 
 .add_footer{

@@ -58,7 +58,7 @@ export default {
                     if (res.success){
                         if (res.data.Role === "ROLE_admin"){
                             localStorage.setItem("token", res.data.token);
-                            this.userInfo.userName = request.username;
+                            sessionStorage.setItem("userName", request.username);
                             this.$message({
                                 message: "登录成功",
                                 type: 'success'
@@ -95,7 +95,42 @@ export default {
           	}
         })
       }
-    }
+    },
+    mounted() {
+        // 检查是否已经登录过了
+        fetch(this.URL + "api/auth/whoami", {
+            method: 'GET',
+            headers: {
+                Authorization: 'Bearer  ' + localStorage.getItem("token")
+            }
+        }).then(res => res.json()).then(res => {
+            if (res.success){
+                // 必须是管理员账户，防止用户通过修改token绕过登录
+                if (res.data.authorities[0].authority === "ROLE_admin"){
+                    this.$message({
+                        message: "已登录",
+                        type: 'success'
+                    })
+                    // 一次会话后session会被清空，需要重新设置
+                    sessionStorage.setItem("userName", res.data.principal.user.username);
+                    this.$router.push("/index");
+                }else{
+                    this.$message({
+                        message: "无效的用户类型",
+                        type: 'error'
+                    })
+                }
+            }else{
+                return false;
+            }
+        }).catch(err => {
+            this.$message({
+                message: "加载失败，服务器出错" + err,
+                type: 'error'
+            })
+            return false;
+        });  
+    },
 }
 </script>
 

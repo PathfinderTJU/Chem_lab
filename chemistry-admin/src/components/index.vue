@@ -7,6 +7,7 @@
                     <img id="logo" src="../assets/pictures/logo.png"/>
                 </div>
                 <div id="title">化工学院远程实验管理平台</div>
+                <el-button id="logout" @click="logout" type="text">退出登录</el-button>
             </el-header>
             <el-container class="container">
                 <!-- 侧边栏 -->
@@ -33,8 +34,11 @@
                                 <span slot="title">管理开放时段</span>
                             </el-menu-item>
                         </el-submenu>
-                        <el-menu-item index="/index/announcement">
+                        <!-- <el-menu-item index="/index/announcement">
                             <span slot="title">公告管理</span>
+                        </el-menu-item> -->
+                        <el-menu-item index="/index/password">
+                            <span slot="title">修改密码</span>
                         </el-menu-item>
                     </el-menu>
                 </el-aside>
@@ -49,7 +53,18 @@
 
 <script>
 export default {
-    name: 'index'
+    name: 'index',
+    methods: {
+        logout(){
+            localStorage.setItem("token", "");
+            sessionStorage.setItem("userName", "");
+            this.$message({
+                message: "已退出",
+                type: 'success'
+            })
+            this.$router.replace("/login");
+        }
+    }
 }
 </script>
 
@@ -66,6 +81,11 @@ export default {
     width: 20%;
     text-align: center;
 }
+
+#logout{
+    margin-left: 30px;
+}
+
 
 #logo{
     height: 100px;

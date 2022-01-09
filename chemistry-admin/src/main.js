@@ -12,9 +12,6 @@ Vue.use(ElementUI)
 Vue.prototype.URL = URL
 Vue.prototype.PUBLICKEY = ""
 Vue.config.productionTip = false
-Vue.prototype.userInfo = {
-    userName: ""
-}
 
 /* eslint-disable no-new */
 new Vue({
