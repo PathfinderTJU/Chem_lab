@@ -13,7 +13,7 @@
         </div>
         <!-- 表格 -->
         <div class="table_block">
-            <el-table :data="planData" height="100%" border stripe @header-click="changeTime" :header-cell-class-name="setPointer">
+            <el-table :data="planData" height="100%" ref="dataTable" border stripe @header-click="changeTime" :header-cell-class-name="setPointer">
                 <el-table-column prop="name" label="名称"></el-table-column>
                 <el-table-column v-for="(item, index) in time" :key="item.value" :prop="item.plan" :label="item.label + '\n' + item.start + '-' + item.end" :index="index">
                     <template slot-scope="scope">
@@ -120,15 +120,7 @@ export default {
         
         return{
             planData: [],
-            time: [
-                {value: 0, label:"第一节", start:"8:30", end:"10:00"},
-                {value: 1, label:"第二节", start:"10:25", end:"11:55"},
-                {value: 2, label:"第三节", start:"12:00", end:"13:30"},
-                {value: 3, label:"第四节", start:"13:35", end:"15:05"},
-                {value: 4, label:"第五节", start:"15:25", end:"16:55"},
-                {value: 5, label:"第六节", start:"18:30", end:"20:00"},
-                {value: 6, label:"第七节", start:"20:25", end:"21:55"}
-            ],
+            time: [],
             updateIndex: 0,
             newName: "", //新名称,
             editFormVisible: false, //控制编辑名称弹窗
@@ -136,6 +128,7 @@ export default {
             editForm: {}, //编辑名称表单
             timeForm: {}, //编辑时间表单
             isLoading: false, //控制loading
+            isDisabled: false,
             editRules: {
                 name: [
                     {required: true, message: "请输入名称", trigger: 'blur'}
@@ -150,10 +143,22 @@ export default {
                     {required: true, message: "请输入终止时间", trigger: 'blur'},
                     {validator: timeEndRule, trigger: 'blur'}
                 ]
-            }
+            },
+            timeLabels: ["第一节", "第二节", "第三节", "第四节", "第五节", "第六节", "第七节"]
         }
     },
     methods: {
+        // 格式化时间格式，将一个"hour:minute"格式时间字符串转换为"hh:mm"
+        formateTime(time){
+            let timeSub = time.split(":");
+            timeSub.forEach(e => {
+                if (+e < 10){
+                    e = "0" + e;
+                }
+            });
+
+            return timeSub[0] + ":" + timeSub[1];
+        },
         // 设置表头可点击为小手
         setPointer(scope){
             if (scope.columnIndex > 0 && scope.columnIndex < 8){
@@ -404,12 +409,12 @@ export default {
             this.timeFormVisible = true;
             this.timeForm = JSON.parse(JSON.stringify(this.time[index]));
         },
-        // 未完成，等接口
         // 提交修改时间表单
         timeSubmit(formName){
             let data = this.timeForm;
             let request = {
-
+                startTime: this.formateTime(data.start),
+                endTime: this.formateTime(data.end)
             };
 
             this.$refs[formName].validate((valid) => {
@@ -480,6 +485,7 @@ export default {
             }).then(res => res.json()).then(res => {
                 if (res.success){
                     this.planData = res.data;
+                    this.$refs.dataTable.doLayout();
                 }else{
                     if (res.status === 402){
                         this.$message({
@@ -507,10 +513,56 @@ export default {
                 return false;
             });
         },
-        // 未完成，等接口
         // 获取开放计划的时间段
         getTime(){
+            fetch(this.URL + "api/daily-open-plans/items/", {
+                method: 'GET',
+                headers: {
+                    Authorization: 'Bearer  ' + localStorage.getItem("token")
+                }
+            }).then(res => res.json()).then(res => {
+                if (res.success){
+                    let data = res.data;
 
+                    // 替换数据
+                    for (let i = 0 ; i < data.length ; i++){
+                        data[i].label = this.timeLabels[data[i].sn];
+                        data[i].value = data[i].sn;
+                        data[i].start = data[i].startTime.substring(0, 5);
+                        data[i].end = data[i].endTime.substring(0, 5);
+                    }   
+
+                    this.time = data;
+                    
+                    // 重新渲染表格，列的增加可能导致表格高度改变
+					this.$refs.dataTable.doLayout();
+                }else{
+                    if (res.status === 402){
+                        this.$message({
+                            message: "登录已过期",
+                            type: 'error'
+                        })
+                        this.$router.push("/login");
+                    }else if(res.status === 401){
+                        this.$message({
+                            message: "没有相关权限",
+                            type: 'error'
+                        })
+                    }else{
+                        this.$message({
+                            message: "未知错误" + res.status,
+                            type: 'error'
+                        })
+                    }
+                }
+            }).catch(err => {
+
+                this.$message({
+                    message: "加载失败，服务器出错" + err,
+                    type: 'error'
+                })
+                return false;
+            })
         }
     },
     mounted() {

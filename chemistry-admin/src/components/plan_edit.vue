@@ -88,6 +88,18 @@ export default {
         }
     },
     methods: {
+        // 格式化日期格式，将"year-month-day"格式转换为"YYYY-MM-DD"格式
+        formateDate(date){
+            let s = date.toLocaleDateString().replaceAll("/", "-");
+            s = s.split("-");
+            for (let i = 0 ; i < 3 ; i++){
+                if (+s[i] < 10){
+                    s[i] = '0' + s[i];
+                }
+            }
+
+            return s.join('-');
+        },
         // 全选被点击，要么从未勾选或模糊态变为选中，要么从选中变为未勾选
         checkAllChange(){
             // 无论如何，都脱离了模糊态
@@ -129,8 +141,8 @@ export default {
 
             let data = this.addForm;
             let requestData = {
-                startDate: data.date[0].toLocaleDateString().replaceAll("/", "-"),
-                endDate: data.date[1].toLocaleDateString().replaceAll("/", "-"),
+                startDate: this.formateDate(data.date[0]),
+                endDate: this.formateDate(data.date[1]),
                 resourceIds: data.devices,
                 dailyOpenPlanIds: this.plans[0].dailyPlans
             }

@@ -182,6 +182,7 @@ export default {
                             that.isLoading = false;
                             that.planChangeVisible = false;
                             if (res.success){
+                                this.openData.splice(0, this.openData.length);
                                 this.getOpen();
                                 this.$message({
                                     message: "修改成功",
@@ -257,6 +258,7 @@ export default {
                     sn: this.editForm.sn,
                     resourceIds: closedResourceIds
                 }
+                
                 let p1 = new Promise((resolve, reject) => {
                     fetch(this.URL + "api/tickets/by-item", {
                         method: 'DELETE',
@@ -629,6 +631,7 @@ export default {
     mounted() {
         // 填充时间、设备和开放计划
         this.getDevicesAndOpen();
+        this.getPlanDay();
     }
 }
 </script>
