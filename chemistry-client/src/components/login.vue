@@ -81,6 +81,7 @@ export default {
                             if (that.type && res.data.Role === "ROLE_stu"){
                                 localStorage.setItem("token", res.data.token);
                                 sessionStorage.setItem("userName", request.username);
+                                sessionStorage.setItem("userId", res.data.id);
                                 localStorage.setItem("userType", true); // 不能被用户修改的地方
 
                                 this.$message({
@@ -92,6 +93,7 @@ export default {
                                 console.log(1);
                                 localStorage.setItem("token", res.data.token);
                                 sessionStorage.setItem("userName", request.username);
+                                sessionStorage.setItem("userId", res.data.id);
                                 localStorage.setItem("userType", false);
 
                                 this.$message({

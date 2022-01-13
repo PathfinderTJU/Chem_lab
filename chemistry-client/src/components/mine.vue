@@ -54,14 +54,14 @@
                         <span>{{scope.row.date}}</span>
                     </template>
                 </el-table-column>
-                <el-table-column prop="class" label="时间" align="center">
+                <el-table-column prop="sn" label="时间" align="center">
                     <template slot-scope="scope">
-                        <span>{{classes[scope.row.class]}}</span>
+                        <span>{{classes[scope.row.sn]}}</span>
                     </template>
                 </el-table-column>
                 <el-table-column prop="username" label="用户名" align="center"></el-table-column>
-                <el-table-column prop="university" label="学校" align="center"></el-table-column>
-                <el-table-column prop="classId" label="逻辑班号" align="center"></el-table-column>
+                <el-table-column prop="school" label="学校" align="center"></el-table-column>
+                <el-table-column prop="grade" label="逻辑班号" align="center"></el-table-column>
                 <el-table-column label="实验记录" align="center">
                     <template slot-scope="scope">
                         <el-button type="text" size="small" @click="teacherOpenNote(scope)">查看</el-button>
@@ -98,17 +98,7 @@ export default {
                 "C": "化工传热", 
                 "D": "流动过程"
             }, 
-            exData: [ //学生：实验数据
-                {
-                    exId: 0,
-                    date: "2021-11-22",
-                    class: 0,
-                    university: '天津大学',
-                    deviceType: "C",
-                    deviceName: "传热设备1",
-                    note: "这是一条记录\n这是两条记录"
-                }
-            ],
+            exData: [], //学生：实验数据
             note: "", //弹窗中的笔记内容
             noteVisible: false, //弹窗控制
             nowType: "", //当前设备ID
@@ -116,19 +106,7 @@ export default {
             idKeyword: "", //按ID搜索的关键字
             classKeyword: "", //按班级搜索的关键字
             tjuOnly: false, //只显示天大
-            studentExData: [ //教师：实验数据
-                {
-                    exId: 0,
-                    date: "2021-11-22",
-                    class: 0,
-                    username: "3018218144",
-                    university: '天津大学',
-                    classId: '10101', 
-                    deviceType: 2,
-                    deviceName: "传热设备1",
-                    note: "这是一条记录\n这是两条记录"
-                }
-            ],
+            studentExData: [], //教师：实验数据
             nowIndex: 0, // 当前操作的数据index
             pageNum: 0, // 教师：分页页数
             nowPage: 0, // 教师：分页当前页
@@ -144,14 +122,50 @@ export default {
         }
     },
     methods: {
+        // 格式化时间格式，传入Date对象，输出格式为"YYYY-MM-DD HH:MM:SS"的时间串
+        formateTime(date){
+            let year = date.getFullYear();
+            let month = addBit(date.getMonth() + 1);
+            let day = date.getDate();
+
+            let hour = addBit(date.getHours());
+            let minute = addBit(date.getMinutes());
+            let second = addBit(date.getSeconds());
+
+            let result = year + "-" + month + "-" + day + " " + hour + ":" + minute + ":" + second;
+            return result;
+
+            // 补足十位的数字
+            function addBit(origin){
+                if (origin < 10){
+                    return '0' + origin;
+                }else{
+                    return origin;
+                }
+            }
+        },
+        // 格式化日期，将date对象转换为"YYYY-MM-DD"格式数据
+        formateDate(date){
+            let s = date.toLocaleDateString().replaceAll("/", "-");
+            s = s.split("-");
+            for (let i = 0 ; i < 3 ; i++){
+                if (+s[i] < 10){
+                    s[i] = '0' + s[i];
+                }
+            }
+
+            return s.join('-');
+        },
         // 关闭弹窗
         closeDialog(){
-            this.$refs[formName].resetFields();
+            if (!this.userType){
+                this.$refs[formName].resetFields();
+            }
         },
         // 学生：查看笔记
         openNote(scope){
             let index = scope.$index;
-			let id = this.exData[index].id;
+			let id = this.exData[index].ticketId;
             this.noteVisible = true;
 
 			fetch(this.URL + "api/records/" + id, {
@@ -161,7 +175,24 @@ export default {
                 }
             }).then(res => res.json()).then(res => {
                 if (res.success){
-                    this.note = res.data;
+                    let data = res.data;
+                    let result = "";
+
+                    for (let i = 0 ; i < data.length ; i++){
+                        let d = data[i];
+                        let time = this.formateTime(new Date(d.time));
+                        
+                        let temp = "";
+                        temp += '<span style="color: #409EFF;">' + time + '</span> ';
+                        temp += '<span style="color: rgb(55, 187, 55);">' + d.username + '</span>:   ';
+                        temp += d.record + "\r\n";
+
+                        result += temp;
+                    }
+                    if (result === ""){
+                        result = "暂无实验记录"
+                    }
+                    this.note = result;
                 }else{
                     if (res.status === 402){
                         this.$message({
@@ -191,14 +222,34 @@ export default {
         },
         // 学生：获取实验数据
         getExData(){
-            fetch(this.URL + "api/booking/by-user/" + sessionStorage.getItem("userName"), {
+            let date = new Date(); // 今天的日期
+            let today = this.formateDate(date);
+            let result = [];
+
+            fetch(this.URL + "api/booking/by-user/" + sessionStorage.getItem("userId") + "?endDate=" + today, {
                 method: 'GET',
                 headers: {
                     Authorization: 'Bearer  ' + localStorage.getItem("token") 
                 }
             }).then(res => res.json()).then(res => {
                 if (res.success){
-                    this.reserveData = res.data;
+
+                    // 填充数据
+                    for (let i = 0 ; i < res.data.length ; i++){
+                        let data = res.data[i];
+                        let newReserve = {
+                            date: data.ticket.date,
+                            class: data.ticket.sn,
+                            deviceType: data.ticket.resource.type,
+                            deviceName: data.ticket.resource.name,
+                            id: data.id,
+                            ticketId: data.ticket.id
+                        }
+                        result.push(newReserve);
+                    }
+
+                    this.exData = result;        
+
                 }else{
                     if (res.status === 402){
                         this.$message({
@@ -224,26 +275,132 @@ export default {
                         type: 'error'
                     })
                 return false;
-            });            
+            });
         },
         // 教师：获取全部的用户数据
-        getAllStudent(type){
+        getAllStudent(id, page){
+            let date = new Date(); // 今天的日期
+            let today = this.formateDate(date);
 
+            fetch(this.URL + "api/check/getHaveDoneExp?resourceId=" + id + "&pageNum=" + page + "&pageSize=10", {
+                method: 'GET',
+                headers: {
+                    Authorization: 'Bearer  ' + localStorage.getItem("token") 
+                }
+            }).then(res => res.json()).then(res => {
+                if (res.success){console.log(res);
+                    this.pageNum = res.data.TotalPages;
+                    this.studentExData = res.data.Content;                 
+                }else{
+                    if (res.status === 402){
+                        this.$message({
+                            message: "登录已过期",
+                            type: 'error'
+                        })
+                        this.$router.push("/login");
+                    }else if(res.status === 401){
+                        this.$message({
+                            message: "没有相关权限",
+                            type: 'error'
+                        })
+                    }else{
+                        this.$message({
+                            message: "未知错误" + res.status,
+                            type: 'error'
+                        })
+                    }
+                }
+            }).catch(err => {
+                this.$message({
+                    message: "加载失败，服务器出错" + err,
+                        type: 'error'
+                    })
+                return false;
+            });
         },
         // 教师：更换设备
         changeDevice(){
-            this.getAllStudent(this.nowType);
+            this.getAllStudent(this.nowType, 1);
             this.idKeyword = "";
             this.classKeyword = "";
-            this.nowPage = 0;
+            this.nowPage = 1;
         },
         // 教师：分页切换
-        changePage(){
-
+        changePage(page){
+            this.getAllStudent(this.nowType, page);
         },
         // 教师：只显示天大
         showTjuOnly(){
+            if (this.nowType === ""){
+                this.tjuOnly = !this.tjuOnly;
+                this.$message({
+					message: "请选择实验设备",
+					type: 'error'
+				})
+                return false;
+            }
+            
+            if (this.tjuOnly){
+                let data = this.studentExData;
+                let result = [];
 
+                for (let i = 0 ; i < data.length ; i++){
+                    if (data[i].school === "天津学"){
+                        result.push(data[i]);
+                    }
+                }
+
+                this.studentExData = result;
+            }else{
+                let idKey = this.idKeyword;
+                let classKey = this.classKeyword;
+                let date = new Date(); // 今天的日期
+                let today = this.formateDate(date);
+
+                fetch(this.URL + "api/check/getHaveDoneExp?resourceId=" + this.nowType + "&pageNum=" + this.nowPage + "&pageSize=10"
+                            + "&username=" + idKey + "&grade=" + classKey, {
+                    method: 'GET',
+                    headers: {
+                        Authorization: 'Bearer  ' + localStorage.getItem("token") 
+                    }
+                }).then(res => res.json()).then(res => {
+                    if (res.success){
+                        this.pageNum = res.data.TotalPages;
+                        this.studentExData = res.data.Content;
+
+                        if (res.data.Content.length === 0){
+                            this.$message({
+                                message: "无搜索结果",
+                                type: 'error'
+                            }) 
+                        }
+                    }else{
+                        if (res.status === 402){
+                            this.$message({
+                                message: "登录已过期",
+                                type: 'error'
+                            })
+                            this.$router.push("/login");
+                        }else if(res.status === 401){
+                            this.$message({
+                                message: "没有相关权限",
+                                type: 'error'
+                            })
+                        }else{
+                            this.$message({
+                                message: "未知错误" + res.status,
+                                type: 'error'
+                            })
+                        }
+                    }
+                }).catch(err => {
+                    this.$message({
+                        message: "加载失败，服务器出错" + err,
+                            type: 'error'
+                        })
+                    return false;
+                });
+            }
         },
         // 教师：按学号搜索
         searchById(){
@@ -254,8 +411,61 @@ export default {
 				})
                 return false;
             }
+
+            this.classKeyword = "";
+            this.tjuOnly = false;
             let key = this.idKeyword;
-			
+			let date = new Date(); // 今天的日期
+            let today = this.formateDate(date);
+
+            fetch(this.URL + "api/check/getHaveDoneExp?resourceId=" + this.nowType + "&pageNum=" + this.nowPage + "&pageSize=10"
+                           + "&username=" + key, {
+                method: 'GET',
+                headers: {
+                    Authorization: 'Bearer  ' + localStorage.getItem("token") 
+                }
+            }).then(res => res.json()).then(res => {
+                if (res.success){
+                    this.pageNum = res.data.TotalPages;
+                    this.studentExData = res.data.Content;
+
+                    if (res.data.Content.length === 0){
+                        this.$message({
+                            message: "无搜索结果",
+                            type: 'error'
+                        }) 
+                    }else{
+                        this.$message({
+                            message: "搜索成功",
+                            type: 'success'
+                        })   
+                    }
+                }else{
+                    if (res.status === 402){
+                        this.$message({
+                            message: "登录已过期",
+                            type: 'error'
+                        })
+                        this.$router.push("/login");
+                    }else if(res.status === 401){
+                        this.$message({
+                            message: "没有相关权限",
+                            type: 'error'
+                        })
+                    }else{
+                        this.$message({
+                            message: "未知错误" + res.status,
+                            type: 'error'
+                        })
+                    }
+                }
+            }).catch(err => {
+                this.$message({
+                    message: "加载失败，服务器出错" + err,
+                        type: 'error'
+                    })
+                return false;
+            });
         },
         // 教师：按班号搜索
         searchByClass(){
@@ -266,59 +476,61 @@ export default {
 				})
                 return false;
             }
-
+            
+            this.idKeyword = ""; // 不能同时查询
+            this.tjuOnly = false;
             let key = this.classKeyword;
-			fetch(this.URL + "api/check/getHaveDoneExp?userName=" + key, {
-				method: 'GET',
-				headers: {
-					Authorization: 'Bearer  ' + localStorage.getItem("token")
-				}
-			}).then(res => res.json()).then(res => {
-				if (res.success){
-					if (res.data === null){
-						this.$message({
-							message: "未找到用户",
-							type: 'error'
-						})
-					}else{
-						let data = res.data;
-						this.accountData.splice(0, this.accountData.length, data.user);
-						this.pageNum = 1;
-						this.nowPage = 1;
-						
-						// 获取用户类型
-						for(let i = 0 ; i < this.types.length ; i++){
-							if (this.types[i].key === data.role){
-								this.nowType = this.types[i].value;
-							}
-						}
-					}
-				}else{
-					if (res.status === 402){
-						this.$message({
-							message: "登录已过期",
-							type: 'error'
-						})
-						this.$router.push("/login");
-					}else if(res.status === 401){
-						this.$message({
-							message: "没有相关权限",
-							type: 'error'
-						})
-					}else{
-						this.$message({
-							message: "未知错误" + res.status,
-							type: 'error'
-						})
-					}
-				}
-			}).catch(err => {
-				this.$message({
-					message: "搜索失败，服务器出错" + err,
-					type: 'error'
-				})
-				return false;
-			})
+			let date = new Date(); // 今天的日期
+            let today = this.formateDate(date);
+
+            fetch(this.URL + "api/check/getHaveDoneExp?resourceId=" + this.nowType + "&pageNum=" + this.nowPage + "&pageSize=10"
+                           + "&grade=" + key, {
+                method: 'GET',
+                headers: {
+                    Authorization: 'Bearer  ' + localStorage.getItem("token") 
+                }
+            }).then(res => res.json()).then(res => {
+                if (res.success){
+                    this.pageNum = res.data.TotalPages;
+                    this.studentExData = res.data.Content;
+
+                    if (res.data.Content.length === 0){
+                        this.$message({
+                            message: "无搜索结果",
+                            type: 'error'
+                        }) 
+                    }else{
+                        this.$message({
+                            message: "搜索成功",
+                            type: 'success'
+                        })   
+                    }
+                }else{
+                    if (res.status === 402){
+                        this.$message({
+                            message: "登录已过期",
+                            type: 'error'
+                        })
+                        this.$router.push("/login");
+                    }else if(res.status === 401){
+                        this.$message({
+                            message: "没有相关权限",
+                            type: 'error'
+                        })
+                    }else{
+                        this.$message({
+                            message: "未知错误" + res.status,
+                            type: 'error'
+                        })
+                    }
+                }
+            }).catch(err => {
+                this.$message({
+                    message: "加载失败，服务器出错" + err,
+                        type: 'error'
+                    })
+                return false;
+            });
         },
         // 教师：查看笔记
         teacherOpenNote(scope){

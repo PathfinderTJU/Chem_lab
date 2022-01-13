@@ -50,7 +50,7 @@
                 <el-form-item label="选择开放设备" prop="devices">
                     <el-checkbox :indeterminate="isIndeterminate" v-model="checkAll" @change="checkAllChange">全选</el-checkbox>
                     <el-checkbox-group v-model="editForm.devices" @change="deviceChange">
-                        <el-checkbox v-for="(item,index) in devices" :label="item.id" :key="item.id" @change="changeDevice(index)">{{types[item.type]}}: {{item.name}}</el-checkbox>
+                        <el-checkbox v-for="(item,index) in devices" :label="item.id" :key="item.id">{{types[item.type]}}: {{item.name}}</el-checkbox>
                     </el-checkbox-group>
                 </el-form-item>
                 <div class="add_footer">
@@ -72,7 +72,12 @@ export default {
             isLoading: false, //控制表单loading
             weekDays: ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"], //填充的星期
             classes: ["第一节", "第二节", "第三节", "第四节", "第五节", "第六节", "第七节"], //节数
-            types: ["精馏", "吸收-解吸", "化工传热", "流动过程"], //设备类型显示字符
+            types: {
+                "A": "精馏", 
+                "B": "吸收-解吸", 
+                "C": "化工传热", 
+                "D": "流动过程"
+            }, //设备类型显示字符
             texts: ["全部开放", "部分开放", "不开放"],
             devices: [], //设备列表
             plans: [],//开放计划列表
@@ -131,12 +136,16 @@ export default {
             // 未选中或模糊态，变为全选中
             if (this.editForm.devices.length !== this.devices.length){
                 this.checkAll = true;
+                
+                // 改变devices，用于显示
                 this.editForm.devices = [];
                 for (let i = 0 ; i < this.devices.length ; i++){
                     this.editForm.devices.push(this.devices[i].id);
                 }
             }else{ //全选中，变为未选中
                 this.checkAll = false;
+                
+                // 改变devices，用于显示
                 this.editForm.devices = [];
             }
         },
@@ -227,13 +236,11 @@ export default {
         planCancel(){
             this.planChangeVisible = false;
         },
-        // 单独修改时，增加/删除设备
-        changeDevice(index){
-            this.editForm.checked[index] = !this.editForm.checked[index];
-        },
         // 单独修改提交
         cellSubmit(formName){
             let that = this;
+            
+
             this.$confirm('确定将所选设备在' + this.cellChangeDate + this.classes[this.cellChangeClassIndex] + "开放吗？已有的预约有可能被取消", '提示', {
                 confirmButtonText: '确定',
                 cancelButtonText: '取消',
@@ -241,13 +248,14 @@ export default {
             }).then(() => {
                 let closedResourceIds = [];
                 let openResourceIds = [];
-                for (let i = 0 ; i < this.editForm.checked.length ; i++){
-                    if (this.editForm.checked[i]){
-                        if (this.editForm.origin.includes(this.devices[i].id)){
-                            closedResourceIds.push(this.devices[i].id);
-                        }else{
-                            openResourceIds.push(this.devices[i].id);
-                        }
+                for (let i = 0 ; i < this.devices.length ; i++){
+                    let id = this.devices[i].id;
+                    if (this.editForm.origin.includes(id) && !this.editForm.devices.includes(id)){ // 之前有但现在没有了
+                        closedResourceIds.push(id);
+                    }
+
+                    if (!this.editForm.origin.includes(id) && this.editForm.devices.includes(id)){ // 之前没有但现在有了
+                        openResourceIds.push(id);
                     }
                 }
 
@@ -356,22 +364,8 @@ export default {
                     this.isLoading = false;
                     this.cellChangeVisible = false;
 
-                    //修改当前状态
-                    let d = new Date(this.editForm.date);
-                    let index = d.getDay() - this.startDate.getDay();
-                    switch (this.editForm.devices.length){
-                        case 0:
-                            this.openData[index].status.splice(this.editForm.sn, 1, 2);
-                            break;
-                        case 1:
-                            this.openData[index].status.splice(this.editForm.sn, 1, 1);
-                            break;
-                        case 2:
-                            this.openData[index].status.splice(this.editForm.sn, 1, 0);
-                            break;
-                    }
-                    // 修改设备数目
-                    this.openData[index].devices.splice(this.editForm.sn, 1, this.editForm.devices);
+                    // 刷新数据
+                    this.getOpen();
 
                 }).catch((code) => {
                     this.isLoading = false;
@@ -395,14 +389,12 @@ export default {
         nextWeek(){
             this.startDate = new Date(this.startDate.getFullYear(), this.startDate.getMonth(), this.startDate.getDate() + 7);
             this.endDate = new Date(this.endDate.getFullYear(), this.endDate.getMonth(), this.endDate.getDate() + 7);
-            this.openData.splice(0, this.openData.length);
             this.getOpen();
         },
         // 上一周
         previousWeek(){
             this.startDate = new Date(this.startDate.getFullYear(), this.startDate.getMonth(), this.startDate.getDate() - 7);
             this.endDate = new Date(this.endDate.getFullYear(), this.endDate.getMonth(), this.endDate.getDate() - 7);
-            this.openData.splice(0, this.openData.length);
             this.getOpen();
         },
         // 打开修改计划或单独修改弹窗
@@ -417,16 +409,11 @@ export default {
                 this.planChangeVisible = true;
                 this.planChangeDate = row.date;
             }else{ // 单独修改   
-                let checked = [];
-                for (let i = 0 ; i < this.devices.length ; i++){
-                    checked.push(false);
-                }
-
+                // devices用于绑定复选框选中数据
                 this.editForm = {
                     date: row.date,
                     sn: column.index,
                     devices: row.devices[column.index],
-                    checked: checked,
                     origin: row.devices[column.index]
                 };
 
@@ -618,13 +605,15 @@ export default {
                 }
 
                 //修改数据结构
+                let newOpen = [];
                 for(let i in temp){
-                    this.openData.push({
+                    newOpen.push({
                         date: i,
                         devices: temp[i].devices,
                         status: temp[i].status
                     });
                 }
+                this.openData = newOpen;
             });
         },
     },

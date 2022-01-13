@@ -41,14 +41,31 @@ export default {
     data(){
         return{
             classes: ["第一节", "第二节", "第三节", "第四节", "第五节", "第六节", "第七节"], //节数
-            types: ["精馏", "吸收-解吸", "化工传热", "流动过程"], //设备类型显示字符
+            types: {
+                "A": "精馏", 
+                "B": "吸收-解吸", 
+                "C": "化工传热", 
+                "D": "流动过程"
+            }, //设备类型显示字符
             reserveData: []
         }
     },
     methods: {
+        // 格式化日期，将"year-month-date"格式日期转换为"YYYY-MM-DD"格式数据
+        formateDate(){
+            let s = date.toLocaleDateString().replaceAll("/", "-");
+            s = s.split("-");
+            for (let i = 0 ; i < 3 ; i++){
+                if (+s[i] < 10){
+                    s[i] = '0' + s[i];
+                }
+            }
+
+            return s.join('-');
+        },
         // 取消预约
         cancel(scope){
-            let id = this.reserveData[scope.$index].reserveId;
+            let id = this.reserveData[scope.$index].id;
             fetch(this.URL + "api/booking/" + id, {
                 method: 'DELETE',
                 headers: {
@@ -60,6 +77,7 @@ export default {
                         message: "取消成功",
                         type: 'success'
                     })
+                    this.getReserve();
                 }else{
                     if (res.status === 402){
                         this.$message({
@@ -89,14 +107,33 @@ export default {
         },
         // 获取预约信息
         getReserve(){
-            fetch(this.URL + "api/booking/by-user/" + sessionStorage.getItem("userName"), {
+            let result = [];
+            let date = new Date(); // 今天的日期
+            let today = this.formateDate(date.toLocaleDateString());
+
+            fetch(this.URL + "api/booking/by-user/" + sessionStorage.getItem("userId") + "?startDate=" + today, {
                 method: 'GET',
                 headers: {
                     Authorization: 'Bearer  ' + localStorage.getItem("token") 
                 }
             }).then(res => res.json()).then(res => {
                 if (res.success){
-                    this.reserveData = res.data;
+                    console.log(res);
+                    // 填充数据
+                    for (let i = 0 ; i < res.data.length ; i++){
+                        let data = res.data[i];
+                        let newReserve = {
+                            date: data.ticket.date,
+                            class: data.ticket.sn,
+                            deviceType: data.ticket.resource.type,
+                            deviceName: data.ticket.resource.name,
+                            id: data.id
+                        }
+                        result.push(newReserve);
+                    }
+
+                    this.reserveData = result;        
+
                 }else{
                     if (res.status === 402){
                         this.$message({
@@ -127,6 +164,7 @@ export default {
     },
     mounted() {
         this.getReserve();
+        this.getTime();
     },
 }
 </script>

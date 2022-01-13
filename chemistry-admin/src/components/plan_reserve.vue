@@ -52,6 +52,13 @@ export default {
                 return "reserveClose";
             }
         },
+        // 初始化表格时间
+        initTime(){
+            let now = new Date();
+            let day = now.getDay();
+            this.startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 1);
+            this.endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7 - day);
+        },
         // 格式化日期格式，传入Date对象，输出YYYY-DD-MM格式数据
         formateDate(date){
             let s = date.toLocaleDateString().replaceAll("/", "-");
@@ -71,7 +78,9 @@ export default {
             }
             this.startDate = new Date(this.startDate.getFullYear(), this.startDate.getMonth(), this.startDate.getDate() + 7);
             this.endDate = new Date(this.endDate.getFullYear(), this.endDate.getMonth(), this.endDate.getDate() + 7);
+            // 清空数据
             this.reserveData.splice(0, this.reserveData.length);
+
             this.getReserve(this.nowType);
         },
         // 上一周
@@ -82,12 +91,18 @@ export default {
 
             this.startDate = new Date(this.startDate.getFullYear(), this.startDate.getMonth(), this.startDate.getDate() - 7);
             this.endDate = new Date(this.endDate.getFullYear(), this.endDate.getMonth(), this.endDate.getDate() - 7);
+            // 清空数据
             this.reserveData.splice(0, this.reserveData.length);
+
             this.getReserve(this.nowType);
         },
         // 改变设备，刷新数据
         changeDevice(value){
+            // 清空数据
             this.reserveData.splice(0, this.reserveData.length);
+            // 还原时间
+            this.initTime();
+            
             this.getReserve(value);
         },
         // 获取设备信息
@@ -203,11 +218,9 @@ export default {
     mounted() {
         // 填充设备类型
         this.getDevice();
+
         // 填充时间
-        let now = new Date();
-        let day = now.getDay();
-        this.startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 1);
-        this.endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7 - day);
+        this.initTime();
     },
 }
 </script>

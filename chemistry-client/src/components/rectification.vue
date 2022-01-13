@@ -212,7 +212,9 @@ export default {
             switchBuffer: "", //开关区缓存
             messages: [], //聊天记录数据
             haveNewMsg: false, //聊天区是否有新消息,
-            timeChecked: false // 是否发送过到时警告了
+            timeChecked: false, // 是否发送过到时警告了
+            dataTimer: -1, // 存储刷新数据定时器的变量
+            msgAndTimeTimer: -1 // 存储刷新消息和结束时间的变量
     	}
     },
     methods: {
@@ -659,6 +661,9 @@ export default {
                 cancelButtonText: '取消',
                 type: 'warning'
             }).then(() => {
+                // 清除定时器
+                clearInterval(this.dataTimer);
+                clearInterval(this.msgAndTimeTimer);
                 this.$router.replace("/index");
             }) 
         },
@@ -690,17 +695,20 @@ export default {
 
         // 循环刷新数据ing...
         // setInerval直接使用会卡死
-        window.setInterval(() => {
+        this.msgAndTimeTimer = window.setInterval(() => {
             setTimeout(this.refreshMsg, 0);
             setTimeout(this.checkTime, 0);
         }, 5000);
 
-        window.setInterval(() => {
+        this.dataTimer = window.setInterval(() => {
             setTimeout(this.refreshData, 0);
         }, 1000);
     },
     destroyed(){
         window.removeEventListener('beforeunload', e => this.stopExit(e));
+        // 清除定时器
+        clearInterval(this.dataTimer);
+        clearInterval(this.msgAndTimeTimer);
     }
 }
 </script>

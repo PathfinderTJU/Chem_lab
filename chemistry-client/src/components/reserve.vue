@@ -29,7 +29,7 @@
                     <template slot-scope="scope">
                         <span v-if="!scope.row.open[index]">未开放</span>
                         <span v-else-if="scope.row.reserve[index] == 3">已约满</span>
-                        <span v-else>{{scope.row.reserve[index]}}/3</span>
+                        <span v-else>已约：{{scope.row.reserve[index]}}/3</span>
                     </template>
                 </el-table-column>
             </el-table>
@@ -47,7 +47,7 @@
                     <template slot-scope="scope">
                         <span v-if="!scope.row.open[index]">未开放</span>
                         <span v-else-if="scope.row.reserve[index] == 3">已约满</span>
-                        <span v-else>{{scope.row.reserve[index]}}/3</span>
+                        <span v-else>已约：{{scope.row.reserve[index]}}/3</span>
                     </template>
                 </el-table-column>
             </el-table>
@@ -68,42 +68,12 @@ export default {
             startDate: "", //起始日期，周一
             endDate: "", //终止日期，周日
             reserveData: [], //预约情况数据，"date为标准时间，10字符"
-            myReserveData: [ //学生的预约数据
-                {
-                    date: "2021-12-20",
-                    reserved: [false, false, false, true, false, false, false]
-                },
-                {
-                    date: "2021-11-09",
-                    reserved: [false, false, false, false, false, false, false]
-                },
-                {
-                    date: "2021-11-10",
-                    reserved: [false, false, false, false, false, false, false]
-                },
-                {
-                    date: "2021-11-11",
-                    reserved: [false, false, false, false, false, false, true]
-                },
-                {
-                    date: "2021-11-12",
-                    reserved: [false, false, false, false, false, false, false]
-                },
-                {
-                    date: "2021-11-13",
-                    reserved: [false, false, false, false, false, false, false]
-                },
-                {
-                    date: "2021-11-14",
-                    reserved: [false, false, false, false, false, false, false]
-                }
-            ]
+            myReserveData: [] //学生的预约数据
         }
     },
     methods: {
         // 设置单元格颜色
         studentSetColor(scope){
-            console.log(scope);
             if (scope.columnIndex !== 0){
                 if (!scope.row.open[scope.columnIndex - 1]){
                     return "reserveClose";
@@ -125,6 +95,13 @@ export default {
                 }
             }
         },
+        // 初始化表格时间
+        initTime(){
+            let now = new Date();
+            let day = now.getDay();
+            this.startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 1);
+            this.endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7 - day);
+        },
         // 格式化日期格式，传入Date对象，输出YYYY-DD-MM格式数据
         formateDate(date){
             let s = date.toLocaleDateString().replaceAll("/", "-");
@@ -144,8 +121,7 @@ export default {
             }
             this.startDate = new Date(this.startDate.getFullYear(), this.startDate.getMonth(), this.startDate.getDate() + 7);
             this.endDate = new Date(this.endDate.getFullYear(), this.endDate.getMonth(), this.endDate.getDate() + 7);
-            this.myReserveData.splice(0, this.myReserveData.length);
-            this.reserveData.splice(0, this.reserveData.length);
+
             if (this.userType){
                 this.getReserve(this.nowType);
             }else{
@@ -160,8 +136,7 @@ export default {
 
             this.startDate = new Date(this.startDate.getFullYear(), this.startDate.getMonth(), this.startDate.getDate() - 7);
             this.endDate = new Date(this.endDate.getFullYear(), this.endDate.getMonth(), this.endDate.getDate() - 7);
-            this.myReserveData.splice(0, this.myReserveData.length);
-            this.reserveData.splice(0, this.reserveData.length);
+
             if (this.userType){
                 this.getReserve(this.nowType);
             }else{
@@ -170,18 +145,21 @@ export default {
         },
         // 改变设备，刷新数据
         changeDevice(value){
+            // 初始化时间
+            this.initTime();
+
             if (this.userType){
-                this.reserveData.splice(0, this.reserveData.length);
                 this.getReserve(value);
             }else{
-                this.myReserveData.splice(0, this.myReserveData.length);
                 this.getStudentReserve(value);
             }
         },
         // 学生：获取预约信息和自己的预约信息，id为设备ID
         getReserve(id){
             let temp = {};
+            let myTemp = {};
             let result = [];
+            let myResult = [];
             
             // 数据格式化用到的数组
             for (let i = 0 ; i < 7 ; i++){                                                  
@@ -189,11 +167,16 @@ export default {
                 let nowString = this.formateDate(now);
                 let open = new Array(7).fill(false);
                 let reserve = new Array(7).fill(0);
+                let ticketId = new Array(7).fill(0);
+                let myReserve = new Array(7).fill(false);
                 temp[nowString] = {
                     open: open,
-                    reserve: reserve
-                };     
-            }            
+                    reserve: reserve,
+                    ticketId: ticketId
+                };
+
+                myTemp[nowString] = myReserve;
+            }
             
             // 获取设备开放信息
 
@@ -211,8 +194,25 @@ export default {
                     }
                 }).then(res => res.json()).then(res => {
                     if (res.success){
-                        // 处理开放数据
+                        // 处理开放数据，填入temp中的reserve数组
+                        let data = res.data;
+                        for (let i = 0 ; i < data.length ; i++){
+                            let d = data[i];
 
+                            temp[d.date].open[d.sn] = true; // 填充是否开放
+                            temp[d.date].reserve[d.sn] = 3 - d.available; // 填充剩余名额
+                            temp[d.date].ticketId[d.sn] = d.id; // 填充ticketID
+                        }
+
+                        for (let i in temp){
+                            let newDate = {
+                                date: i,
+                                open: temp[i].open,
+                                reserve: temp[i].reserve,
+                                ticketId: temp[i].ticketId
+                            }
+                            result.push(newDate);
+                        }
 
                         resolve();
                     }else{
@@ -248,15 +248,30 @@ export default {
             // 获取我的信息
 
             let p2 = new Promise((resolve, reject) => {
-                fetch(this.URL + "api/booking/by-user/" + sessionStorage.getItem("userName") 
-                        + "&startDate=" + requestData.startDate + "&endDate=" + requestData.endDate, {
+                fetch(this.URL + "api/booking/by-user/" + sessionStorage.getItem("userId") 
+                        + "?startDate=" + requestData.startDate + "&endDate=" + requestData.endDate, {
                     method: 'GET',
                     headers: {
                         Authorization: 'Bearer  ' + localStorage.getItem("token")
                     }
                 }).then(res => res.json()).then(res => {
                     if (res.success){
-                        // 处理预约数据
+
+                        // 处理预约数据, 填入myTemp
+                        let data = res.data;
+                        for (let i = 0 ; i < data.length ; i++){
+                            let d = data[i];
+
+                            myTemp[d.ticket.date][d.ticket.sn] = true; // 填充我是否预约了
+                        }
+
+                        for (let i in temp){
+                            let newReserve = {
+                                date: i,
+                                reserved: myTemp[i]
+                            }
+                            myResult.push(newReserve);
+                        }
 
                         resolve();
                     }else{
@@ -292,12 +307,31 @@ export default {
             // 填充数据
             Promise.all([p1, p2]).then(() => {
                 this.reserveData = result;
+                this.myReserveData = myResult;
             });
-
-
         },
         // 教师：只获取设备开放信息
         getStudentReserve(id){
+            let temp = {};
+            let result = [];
+            
+            // 数据格式化用到的数组
+            for (let i = 0 ; i < 7 ; i++){                                                  
+                let now = new Date(this.startDate.getFullYear(), this.startDate.getMonth(), this.startDate.getDate() + i);
+                let nowString = this.formateDate(now);
+                let open = new Array(7).fill(false);
+                let reserve = new Array(7).fill(0);
+                temp[nowString] = {
+                    open: open,
+                    reserve: reserve
+                };
+            }
+
+            let requestData = {
+                startDate: this.formateDate(this.startDate),
+                endDate: this.formateDate(this.endDate)
+            }
+
             fetch(this.URL + "api/tickets/by-resource/" + id + "?resourceId=" + id 
                     + "&startDate=" + requestData.startDate + "&endDate=" + requestData.endDate, {
                 method: 'GET',
@@ -306,8 +340,26 @@ export default {
                 }
             }).then(res => res.json()).then(res => {
                 if (res.success){
-                    // 处理开放数据
+                    // 处理开放数据，填入temp中的reserve数组
+                    let data = res.data;
+                    for (let i = 0 ; i < data.length ; i++){
+                        let d = data[i];
 
+                        temp[d.date].open[d.sn] = true; // 填充是否开放
+                        temp[d.date].reserve[d.sn] = 3 - d.available; // 填充剩余名额
+                        temp[d.date].ticketId = d.id; // 填充ticketID
+                    }
+
+                    for (let i in temp){
+                        let newDate = {
+                            date: i,
+                            open: temp[i].open,
+                            reserve: temp[i].reserve,
+                            ticketId: temp[i].ticketId
+                        }
+                        result.push(newDate);
+                    }
+                    this.reserveData = result;
 
                 }else{
                     if (res.status === 402){
@@ -343,7 +395,8 @@ export default {
             let myReserve = this.myReserveData.find(function(e){
                 return e.date === date;
             })
-            let id = row.ticketId;
+            let id = row.ticketId[sn];
+            console.log(id);
             
             if (myReserve.reserved[sn]){
                 this.$confirm('确认取消预约吗？' ,{
@@ -482,11 +535,9 @@ export default {
 
         // 填充设备类型
         this.getDevice();
+
         // 填充时间
-        let now = new Date();
-        let day = now.getDay();
-        this.startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 1);
-        this.endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7 - day);
+        this.initTime();
     }
 }
 </script>

@@ -83,8 +83,8 @@ export default {
             }).then(res => res.json()).then(res => {
                 if (res.success){
                     let url = this.urls[this.type];
-                    console.log(res);
-                    // this.$router.push(url + "?ticketId=" + );
+                    let ticketId = res.data.ticketId;
+                    this.$router.push(url + "?ticketId=" + ticketId);
                 }else{
                     if(res.status === 400){
                         this.$message({
