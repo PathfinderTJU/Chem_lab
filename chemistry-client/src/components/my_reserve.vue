@@ -47,12 +47,13 @@ export default {
                 "C": "化工传热", 
                 "D": "流动过程"
             }, //设备类型显示字符
-            reserveData: []
+            reserveData: [],
+            time: []
         }
     },
     methods: {
-        // 格式化日期，将"year-month-date"格式日期转换为"YYYY-MM-DD"格式数据
-        formateDate(){
+        // 格式化日期，将date对象转换为"YYYY-MM-DD"格式数据
+        formateDate(date){
             let s = date.toLocaleDateString().replaceAll("/", "-");
             s = s.split("-");
             for (let i = 0 ; i < 3 ; i++){
@@ -108,63 +109,134 @@ export default {
         // 获取预约信息
         getReserve(){
             let result = [];
-            let date = new Date(); // 今天的日期
-            let today = this.formateDate(date.toLocaleDateString());
+            let today = new Date(); // 今天的日期
 
-            fetch(this.URL + "api/booking/by-user/" + sessionStorage.getItem("userId") + "?startDate=" + today, {
-                method: 'GET',
-                headers: {
-                    Authorization: 'Bearer  ' + localStorage.getItem("token") 
-                }
-            }).then(res => res.json()).then(res => {
-                if (res.success){
-                    console.log(res);
-                    // 填充数据
-                    for (let i = 0 ; i < res.data.length ; i++){
-                        let data = res.data[i];
-                        let newReserve = {
-                            date: data.ticket.date,
-                            class: data.ticket.sn,
-                            deviceType: data.ticket.resource.type,
-                            deviceName: data.ticket.resource.name,
-                            id: data.id
-                        }
-                        result.push(newReserve);
+            // 获取预约信息
+            let p1 = new Promise((resolve, reject) => {
+                fetch(this.URL + "api/booking/by-user/" + sessionStorage.getItem("userId"), {
+                    method: 'GET',
+                    headers: {
+                        Authorization: 'Bearer  ' + localStorage.getItem("token") 
                     }
-
-                    this.reserveData = result;        
-
-                }else{
-                    if (res.status === 402){
-                        this.$message({
-                            message: "登录已过期",
-                            type: 'error'
-                        })
-                        this.$router.push("/login");
-                    }else if(res.status === 401){
-                        this.$message({
-                            message: "没有相关权限",
-                            type: 'error'
-                        })
+                }).then(res => res.json()).then(res => {
+                    if (res.success){
+                        // 填充数据
+                        for (let i = 0 ; i < res.data.length ; i++){
+                            let data = res.data[i];
+                            let newReserve = {
+                                date: data.ticket.date,
+                                class: data.ticket.sn,
+                                deviceType: data.ticket.resource.type,
+                                deviceName: data.ticket.resource.name,
+                                id: data.id
+                            }
+                            result.push(newReserve);
+                        }      
+                        
+                        resolve();
                     }else{
-                        this.$message({
-                            message: "未知错误" + res.status,
-                            type: 'error'
-                        })
+                        if (res.status === 402){
+                            this.$message({
+                                message: "登录已过期",
+                                type: 'error'
+                            })
+                            this.$router.push("/login");
+                        }else if(res.status === 401){
+                            this.$message({
+                                message: "没有相关权限",
+                                type: 'error'
+                            })
+                        }else{
+                            this.$message({
+                                message: "未知错误" + res.status,
+                                type: 'error'
+                            })
+                        }
+                        reject();
                     }
-                }
-            }).catch(err => {
-                this.$message({
-                    message: "加载失败，服务器出错" + err,
+                }).catch(err => {
+                    this.$message({
+                        message: "加载失败，服务器出错" + err,
                         type: 'error'
                     })
-                return false;
+                    reject();
+                    return false;
+                });
+            })
+
+            let p2 = new Promise((resolve, reject) => {
+                fetch(this.URL + "api/daily-open-plans/items/", {
+                    method: 'GET',
+                    headers: {
+                        Authorization: 'Bearer  ' + localStorage.getItem("token")
+                    }
+                }).then(res => res.json()).then(res => {
+                    if (res.success){
+                        let data = res.data;
+
+                        // 替换数据
+                        for (let i = 0 ; i < data.length ; i++){
+                            data[i].label = this.classes[data[i].sn];
+                            data[i].value = data[i].sn;
+                            data[i].start = data[i].startTime.substring(0, 5);
+                            data[i].end = data[i].endTime.substring(0, 5);
+                        }   
+
+                        this.time = data;
+                        resolve();
+                    }else{
+                        if (res.status === 402){
+                            this.$message({
+                                message: "登录已过期",
+                                type: 'error'
+                            })
+                            this.$router.push("/login");
+                        }else if(res.status === 401){
+                            this.$message({
+                                message: "没有相关权限",
+                                type: 'error'
+                            })
+                        }else{
+                            this.$message({
+                                message: "未知错误" + res.status,
+                                type: 'error'
+                            })
+                        }
+                        reject();
+                    }
+                }).catch(err => {
+                    this.$message({
+                        message: "加载失败，服务器出错" + err,
+                        type: 'error'
+                    })
+                    reject();
+                    return false;
+                })                
+            })
+
+            // 筛选数据
+            Promise.all([p1, p2]).then(() => {
+                let temp = [];
+                for (let i = 0 ; i < result.length ; i++){
+                    let date = result[i].date;
+                    let sn = result[i].class;
+                    let endTime = new Date(date + " " + this.time[sn].endTime);
+
+                    if (!compareTime(today, endTime)){
+                        temp.push(result[i]);
+                    }
+                }
+
+                this.reserveData = temp;
             });
-        }
+
+            function compareTime(date1, date2){ // date1比date2晚返回true，否则都返回true
+                return date1.getTime() - date2.getTime() > 0;
+            }
+        },
     },
     mounted() {
         this.getReserve();
-        this.getTime();
     },
 }
 </script>

@@ -71,14 +71,14 @@
             <el-pagination id="changePageButton" @current-change="changePage" layout="prev, pager, next" :total="pageNum * 10"></el-pagination>
         </div>
         <!-- 实验记录弹窗 -->
-        <el-dialog title="实验记录" :visible.sync="noteVisible" @close="closeDialog">
+        <el-dialog title="实验记录" :visible.sync="noteVisible" @close="closeDialog('scoreForm')">
             <p class="note_block" v-html="note"></p>
             <el-form v-if="!userType" ref="scoreForm" :model="scoreForm" :rules="rules" label-width="100px" label-position="top" v-loading="isLoading">
                 <el-form-item prop="score" label="得分">
                     <el-input v-model.number="scoreForm.score" clearable></el-input>
                 </el-form-item>
                 <el-form-item id="submit_item">
-                    <el-button id="submit" type="primary" @click="giveScore('form')" >打分</el-button>
+                    <el-button id="submit" type="primary" @click="giveScore('scoreForm')" >打分</el-button>
                 </el-form-item>
             </el-form>
         </el-dialog>
@@ -118,7 +118,8 @@ export default {
                     {required: true, type: 'number', message: "请输入正确的分数", trigger: 'blur'}
                 ]
             },
-            isLoading: false //打分表单loading
+            isLoading: false, //打分表单loading
+            time: []
         }
     },
     methods: {
@@ -157,7 +158,8 @@ export default {
             return s.join('-');
         },
         // 关闭弹窗
-        closeDialog(){
+        closeDialog(formName){
+            this.note = "";
             if (!this.userType){
                 this.$refs[formName].resetFields();
             }
@@ -220,13 +222,84 @@ export default {
                 return false;
             });        
         },
+        // 获取开放时段
+        getTime(){
+            fetch(this.URL + "api/daily-open-plans/items/", {
+                method: 'GET',
+                headers: {
+                    Authorization: 'Bearer  ' + localStorage.getItem("token")
+                }
+            }).then(res => res.json()).then(res => {
+                if (res.success){
+                    let data = res.data;
+
+                    // 替换数据
+                    for (let i = 0 ; i < data.length ; i++){
+                        data[i].start = data[i].startTime.substring(0, 5);
+                        data[i].end = data[i].endTime.substring(0, 5);
+                    }   
+
+                    this.time = data;
+                }else{
+                    if (res.status === 402){
+                        this.$message({
+                            message: "登录已过期",
+                            type: 'error'
+                        })
+                        this.$router.push("/login");
+                    }else if(res.status === 401){
+                        this.$message({
+                            message: "没有相关权限",
+                            type: 'error'
+                        })
+                    }else{
+                        this.$message({
+                            message: "未知错误" + res.status,
+                            type: 'error'
+                        })
+                    }
+                }
+            }).catch(err => {
+                this.$message({
+                    message: "加载失败，服务器出错" + err,
+                    type: 'error'
+                })
+                return false;
+            })
+        },
+        // 过滤数据
+        flitData(result){
+            let today = new Date();
+            let temp = [];
+
+            for (let i = 0 ; i < result.length ; i++){
+                let date = result[i].date;
+                let sn = -1;
+                if (this.userType){
+                    sn = result[i].class;
+                }else{
+                    sn = result[i].sn;
+                }
+                let startTime = new Date(date + " " + this.time[sn].startTime);
+
+                if (!compareTime(today, startTime)){ //当前时间晚于开始时间，实验已经开始
+                    temp.push(result[i]);
+                }
+            }
+
+            return temp
+
+            function compareTime(date1, date2){ // date1比date2早返回true，否则都返回true
+                return date1.getTime() - date2.getTime() < 0;
+            }
+        },
         // 学生：获取实验数据
         getExData(){
             let date = new Date(); // 今天的日期
             let today = this.formateDate(date);
             let result = [];
 
-            fetch(this.URL + "api/booking/by-user/" + sessionStorage.getItem("userId") + "?endDate=" + today, {
+            fetch(this.URL + "api/booking/by-user/" + sessionStorage.getItem("userId"),{
                 method: 'GET',
                 headers: {
                     Authorization: 'Bearer  ' + localStorage.getItem("token") 
@@ -247,8 +320,8 @@ export default {
                         }
                         result.push(newReserve);
                     }
-
-                    this.exData = result;        
+                    
+                    this.exData = this.flitData(result);        
 
                 }else{
                     if (res.status === 402){
@@ -279,18 +352,15 @@ export default {
         },
         // 教师：获取全部的用户数据
         getAllStudent(id, page){
-            let date = new Date(); // 今天的日期
-            let today = this.formateDate(date);
-
             fetch(this.URL + "api/check/getHaveDoneExp?resourceId=" + id + "&pageNum=" + page + "&pageSize=10", {
                 method: 'GET',
                 headers: {
                     Authorization: 'Bearer  ' + localStorage.getItem("token") 
                 }
             }).then(res => res.json()).then(res => {
-                if (res.success){console.log(res);
+                if (res.success){
                     this.pageNum = res.data.TotalPages;
-                    this.studentExData = res.data.Content;                 
+                    this.studentExData = this.flitData(res.data.Content);                 
                 }else{
                     if (res.status === 402){
                         this.$message({
@@ -366,7 +436,7 @@ export default {
                 }).then(res => res.json()).then(res => {
                     if (res.success){
                         this.pageNum = res.data.TotalPages;
-                        this.studentExData = res.data.Content;
+                        this.studentExData = this.flitData(res.data.Content);
 
                         if (res.data.Content.length === 0){
                             this.$message({
@@ -427,7 +497,7 @@ export default {
             }).then(res => res.json()).then(res => {
                 if (res.success){
                     this.pageNum = res.data.TotalPages;
-                    this.studentExData = res.data.Content;
+                    this.studentExData = this.flitData(res.data.Content);
 
                     if (res.data.Content.length === 0){
                         this.$message({
@@ -492,7 +562,7 @@ export default {
             }).then(res => res.json()).then(res => {
                 if (res.success){
                     this.pageNum = res.data.TotalPages;
-                    this.studentExData = res.data.Content;
+                    this.studentExData = this.flitData(res.data.Content);
 
                     if (res.data.Content.length === 0){
                         this.$message({
@@ -536,28 +606,170 @@ export default {
         teacherOpenNote(scope){
             let index = scope.$index;
             this.nowIndex = index;
-            this.noteVisible = true;
+            let ticketId = this.studentExData[index].ticketId;
+            let username = this.studentExData[index].username;
 
-            // 打分
-            
-            this.note = this.studentExData[index].note;
-            this.scoreForm.score = this.studentExData[index].score;
+            // 获取实验记录
+            let p1 = new Promise((resolve, reject) => {
+                fetch(this.URL + "api/records/" + ticketId, {
+                    method: 'GET',
+                    headers: {
+                        Authorization: 'Bearer  ' + localStorage.getItem("token") 
+                    }
+                }).then(res => res.json()).then(res => {
+                    if (res.success){
+                        let data = res.data;
+                        let result = "";
+
+                        for (let i = 0 ; i < data.length ; i++){
+                            let d = data[i];
+                            let time = this.formateTime(new Date(d.time));
+                            
+                            let temp = "";
+                            temp += '<span style="color: #409EFF;">' + time + '</span> ';
+                            temp += '<span style="color: rgb(55, 187, 55);">' + d.username + '</span>:   ';
+                            temp += d.record + "\r\n";
+
+                            result += temp;
+                        }
+                        if (result === ""){
+                            result = "暂无实验记录"
+                        }
+                        this.note = result;
+
+                        resolve();
+                    }else{
+                        if (res.status === 402){
+                            this.$message({
+                                message: "登录已过期",
+                                type: 'error'
+                            })
+                            this.$router.push("/login");
+                        }else if(res.status === 401){
+                            this.$message({
+                                message: "没有相关权限",
+                                type: 'error'
+                            })
+                        }else{
+                            this.$message({
+                                message: "未知错误" + res.status,
+                                type: 'error'
+                            })
+                        }
+                        reject();
+                    }
+                }).catch(err => {
+                    reject();
+                    this.$message({
+                        message: "加载失败，服务器出错" + err,
+                        type: 'error'
+                    })
+                    return false;
+                }); 
+            })
+
+            // 获取分数
+            let p2 = new Promise((resolve, reject) => {
+                fetch(this.URL + "api/check/getScore?ticketId=" + ticketId + 
+                                 "&username=" + username, {
+                    method: 'GET',
+                    headers: {
+                        Authorization: 'Bearer  ' + localStorage.getItem("token")
+                    }
+                }).then(res => res.json()).then(res => {
+                    if (res.success){
+                        this.scoreForm.score = res.data;
+                        resolve();
+                    }else{
+                        if (res.status === 402){
+                            this.$message({
+                                message: "登录已过期",
+                                type: 'error'
+                            })
+                            this.$router.push("/login");
+                        }else if(res.status === 401){
+                            this.$message({
+                                message: "没有相关权限",
+                                type: 'error'
+                            })
+                        }else if (res.status === 603){ // 未评分
+                            this.scoreForm.score = 0;
+                            resolve();
+                        }else{
+                            this.$message({
+                                message: "未知错误" + res.status,
+                                type: 'error'
+                            })
+                        }
+                        reject();
+                    }
+                }).catch(err => {
+                    reject();
+                    this.$message({
+                        message: "加载失败，服务器出错" + err,
+                        type: 'error'
+                    })
+                    return false;
+                });
+            })
+
+            // 填充数据
+            Promise.all([p1, p2]).then(() => {
+                this.noteVisible = true;
+            });
         },
         // 教师：打分
-        giveScore(){
+        giveScore(formName){
+            let index = this.nowIndex;
+            let ticketId = this.studentExData[index].ticketId;
+            let username = this.studentExData[index].username;
+
             this.$refs[formName].validate((valid) => {
                 if (valid) { //验证通过
-                    that.isLoading = true;
-                    that.isDisabled = true;
-                
-                    //停止加载
-                    that.isLoading = false;
-                    //关闭表单
-                    that.scoreVisible = false;
-                    this.$refs["scoreForm"].resetFields();
+                    this.isLoading = true;
+
+                    fetch(this.URL + "api/check/setScore?ticketId=" + ticketId + "&username=" + username
+                                   + "&score=" + this.scoreForm.score, {
+                        method: 'POST',
+                        headers: {
+                            Authorization: 'Bearer  ' + localStorage.getItem("token") 
+                        }
+                    }).then(res => res.json()).then(res => {
+                        this.isLoading = false;
+                        if (res.success){
+                            this.$message({
+                                message: "打分成功",
+                                type: 'success'
+                            })
+                            this.noteVisible = false;
+                        }else{
+                            if (res.status === 402){
+                                this.$message({
+                                    message: "登录已过期",
+                                    type: 'error'
+                                })
+                                this.$router.push("/login");
+                            }else if(res.status === 401){
+                                this.$message({
+                                    message: "没有相关权限",
+                                    type: 'error'
+                                })
+                            }else{
+                                this.$message({
+                                    message: "未知错误" + res.status,
+                                    type: 'error'
+                                })
+                            }
+                        }
+                    }).catch(err => {
+                        this.isLoading = false;
+                        this.$message({
+                            message: "加载失败，服务器出错" + err,
+                            type: 'error'
+                        })
+                        return false;
+                    }); 
                 } else { //验证未通过
-                    //恢复按钮
-                    that.isDisabled = false;
                     return false;
                 }
             });
@@ -605,6 +817,7 @@ export default {
     },
     mounted() {
         this.getDevices();
+        this.getTime();
         if (this.userType){
             this.getExData();
         }

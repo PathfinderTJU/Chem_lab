@@ -98,7 +98,10 @@ export default {
         // 初始化表格时间
         initTime(){
             let now = new Date();
-            let day = now.getDay();
+            let day = now.getDay() - 1;
+            if (day === -1){
+                day = 7;
+            }
             this.startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 1);
             this.endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7 - day);
         },
@@ -169,13 +172,17 @@ export default {
                 let reserve = new Array(7).fill(0);
                 let ticketId = new Array(7).fill(0);
                 let myReserve = new Array(7).fill(false);
+                let reserveId = new Array(7).fill(0);
                 temp[nowString] = {
                     open: open,
                     reserve: reserve,
                     ticketId: ticketId
                 };
 
-                myTemp[nowString] = myReserve;
+                myTemp[nowString] = {
+                    myReserve: myReserve,
+                    reserveId: reserveId
+                };
             }
             
             // 获取设备开放信息
@@ -202,16 +209,6 @@ export default {
                             temp[d.date].open[d.sn] = true; // 填充是否开放
                             temp[d.date].reserve[d.sn] = 3 - d.available; // 填充剩余名额
                             temp[d.date].ticketId[d.sn] = d.id; // 填充ticketID
-                        }
-
-                        for (let i in temp){
-                            let newDate = {
-                                date: i,
-                                open: temp[i].open,
-                                reserve: temp[i].reserve,
-                                ticketId: temp[i].ticketId
-                            }
-                            result.push(newDate);
                         }
 
                         resolve();
@@ -262,13 +259,28 @@ export default {
                         for (let i = 0 ; i < data.length ; i++){
                             let d = data[i];
 
-                            myTemp[d.ticket.date][d.ticket.sn] = true; // 填充我是否预约了
+                            myTemp[d.ticket.date].myReserve[d.ticket.sn] = true; // 填充我是否预约了
+                            myTemp[d.ticket.date].reserveId[d.ticket.sn] = d.id;
                         }
 
+
+                        // 将中间数据转换为渲染格式
                         for (let i in temp){
+                            let newDate = {
+                                date: i,
+                                open: temp[i].open,
+                                reserve: temp[i].reserve,
+                                ticketId: temp[i].ticketId,
+                                reserveId: myTemp[i].reserveId
+                            }
+                            result.push(newDate);
+                        }
+
+                        for (let i in myTemp){
                             let newReserve = {
                                 date: i,
-                                reserved: myTemp[i]
+                                reserved: myTemp[i].myReserve,
+                                id: myTemp[i].reserveId
                             }
                             myResult.push(newReserve);
                         }
@@ -395,8 +407,9 @@ export default {
             let myReserve = this.myReserveData.find(function(e){
                 return e.date === date;
             })
-            let id = row.ticketId[sn];
-            console.log(id);
+            let id = row.reserveId[sn];
+            let ticketId = row.ticketId[sn];
+
             
             if (myReserve.reserved[sn]){
                 this.$confirm('确认取消预约吗？' ,{
@@ -447,7 +460,7 @@ export default {
                     this.$confirm('确认要预约此时段吗？', {
                         type: 'warning'
                     }).then(() => {
-                        fetch(this.URL + "api/booking/by-ticket/" + id, {
+                        fetch(this.URL + "api/booking/by-ticket/" + ticketId, {
                             method: 'POST',
                             headers: {
                                 Authorization: 'Bearer  ' + localStorage.getItem("token")

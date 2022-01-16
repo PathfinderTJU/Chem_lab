@@ -55,7 +55,10 @@ export default {
         // 初始化表格时间
         initTime(){
             let now = new Date();
-            let day = now.getDay();
+            let day = now.getDay() - 1;
+            if (day === -1){
+                day = 7;
+            }
             this.startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 1);
             this.endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7 - day);
         },

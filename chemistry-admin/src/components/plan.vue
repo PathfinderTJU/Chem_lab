@@ -50,7 +50,7 @@
                 <el-form-item label="选择开放设备" prop="devices">
                     <el-checkbox :indeterminate="isIndeterminate" v-model="checkAll" @change="checkAllChange">全选</el-checkbox>
                     <el-checkbox-group v-model="editForm.devices" @change="deviceChange">
-                        <el-checkbox v-for="(item,index) in devices" :label="item.id" :key="item.id">{{types[item.type]}}: {{item.name}}</el-checkbox>
+                        <el-checkbox v-for="item in devices" :label="item.id" :key="item.id">{{types[item.type]}}: {{item.name}}</el-checkbox>
                     </el-checkbox-group>
                 </el-form-item>
                 <div class="add_footer">
@@ -435,12 +435,6 @@ export default {
         },
         // 获取设备信息和初始开放信息
         getDevicesAndOpen(){
-            // 填充时间
-            let now = new Date();
-            let day = now.getDay();
-            this.startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 1);
-            this.endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7 - day);
-
             fetch(this.URL + "api/resources/", {
                 method: 'GET',
                 headers: {
@@ -476,6 +470,17 @@ export default {
                 })
                 return false;
             });
+        },
+        // 初始化时间
+        initTime(){
+            // 填充时间
+            let now = new Date();
+            let day = now.getDay() - 1;
+            if (day === -1){
+                day = 7;
+            }
+            this.startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 1);
+            this.endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7 - day);
         },
         // 获取日开放计划
         getPlanDay(){
@@ -619,6 +624,7 @@ export default {
     },
     mounted() {
         // 填充时间、设备和开放计划
+        this.initTime();
         this.getDevicesAndOpen();
         this.getPlanDay();
     }
