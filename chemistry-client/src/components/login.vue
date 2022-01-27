@@ -7,8 +7,8 @@
             <el-main class="main">
                 <div class="title_block">
                     <div id="title">化工虚拟实验平台</div>
-                    <div class="description">天津大学化工学院</div>
-                    <div class="description">Xingyu Liu 2021.11</div>
+                    <div class="description"></div>
+                    <div class="description"></div>
                 </div>
                 <div class="form_block">
                     <div class="login_form_block">
