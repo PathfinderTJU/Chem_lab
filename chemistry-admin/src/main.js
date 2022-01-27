@@ -6,7 +6,7 @@ import router from './router'
 import ElementUI from 'element-ui'
 import 'element-ui/lib/theme-chalk/index.css'
 
-const URL = "http://www.i-apm.com/";
+const URL = "http://localhost:8080/";
 
 Vue.use(ElementUI)
 Vue.prototype.URL = URL
