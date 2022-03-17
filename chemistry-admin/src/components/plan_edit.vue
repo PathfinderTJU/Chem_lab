@@ -8,10 +8,12 @@
         <div class="table_block">
              <el-form ref="addForm" :model="addForm" label-position="top" label-width="100px" :rules="addRules" v-loading="isLoading" element-loading-text="生成预约票中，请耐心等待...">
                 <el-form-item id="devices_choice" label="选择设备" prop="devices">
-                    <el-checkbox :indeterminate="isIndeterminate" v-model="checkAll" @change="checkAllChange">全选</el-checkbox>
-                    <el-checkbox-group v-model="addForm.devices" @change="deviceChange">
-                        <el-checkbox v-for="item in deviceData" :label="item.id" :key="item.id">{{types[item.type]}}: {{item.name}}</el-checkbox>
-                    </el-checkbox-group>
+                    <div id="devices_checkbox">
+                        <el-checkbox :indeterminate="isIndeterminate" v-model="checkAll" @change="checkAllChange">全选</el-checkbox>
+                        <el-checkbox-group v-model="addForm.devices" @change="deviceChange">
+                            <el-checkbox v-for="item in deviceData" :label="item.id" :key="item.id">{{types[item.type]}}: {{item.name}}</el-checkbox>
+                        </el-checkbox-group>
+                    </div>
                 </el-form-item>
                 <el-form-item label="选择时间与计划" prop="date">
                     <el-date-picker v-model="addForm.date" type="daterange" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期"></el-date-picker>
@@ -134,22 +136,22 @@ export default {
         // 提交 
         submit(formName){
             let that = this;
-
-            //禁用按钮
-            this.isDisabled = true;
-            this.isLoading = true;
-
             let data = this.addForm;
-            let requestData = {
-                startDate: this.formateDate(data.date[0]),
-                endDate: this.formateDate(data.date[1]),
-                resourceIds: data.devices,
-                dailyOpenPlanIds: this.plans[0].dailyPlans
-            }
 
             //判断合法输入
             this.$refs[formName].validate((valid) => {
                 if (valid) { 
+                    //禁用按钮
+                    this.isDisabled = true;
+                    this.isLoading = true;
+
+                    let requestData = {
+                        startDate: this.formateDate(data.date[0]),
+                        endDate: this.formateDate(data.date[1]),
+                        resourceIds: data.devices,
+                        dailyOpenPlanIds: this.plans[0].dailyPlans
+                    }
+
                     fetch(this.URL + "api/tickets/by-weeks", {
                         method: 'POST',
                         headers: {
@@ -198,7 +200,6 @@ export default {
                         that.isDisabled = false;
                         //停止加载
                         that.isLoading = false;
-console.log(err);
                         this.$message({
                             message: "加载失败，服务器出错" + err,
                             type: 'error'
@@ -319,15 +320,15 @@ div {
 
 
 .table_block{
-  max-height: 80%;
+  max-height: 90%;
 }
 
 .add_footer{
     padding-top: 10px;
 }
 
-#devices_choice{
-    height: 120px;
+#devices_checkbox{
+    height: 80px;
     overflow: auto;
 }
 </style>

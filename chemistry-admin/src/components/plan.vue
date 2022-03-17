@@ -582,7 +582,7 @@ export default {
                     let status = new Array(7).fill(2);
                     let devices = new Array(7);
                     for (let i = 0 ; i < 7 ; i++){ // 用fill只创建了一个对象
-                        devices[i] = new Array();
+                        devices[i] = new Set(); // set记录，防止有重复票
                     }
 
                     temp[nowString] = {
@@ -592,20 +592,28 @@ export default {
                     
                 }
 
+
                 // 遍历设备
                 for (let i = 0 ; i < result.length ; i++){
                     let subresult = result[i];
-
                     for (let j = 0 ; j < subresult.length ; j++){
-                        temp[subresult[j].date].devices[subresult[j].sn].push(subresult[j].resourceId);
+                        temp[subresult[j].date].devices[subresult[j].sn].add(subresult[j].resourceId);
 
                         // 全部开放
-                        if (temp[subresult[j].date].devices[subresult[j].sn].length === this.devices.length){
+                        if (temp[subresult[j].date].devices[subresult[j].sn].size === this.devices.length){
                             temp[subresult[j].date].status[subresult[j].sn] = 0;
                         }else{
                             // 部分开放
                             temp[subresult[j].date].status[subresult[j].sn] = 1;
                         }
+                    }
+                    
+                }
+                
+                // 将集合转回数组，便于渲染表单
+                for (let i in temp){
+                    for (let j = 0 ; j < temp[i].devices.length ; j++){
+                        temp[i].devices[j] = Array.from( temp[i].devices[j]);
                     }
                 }
 

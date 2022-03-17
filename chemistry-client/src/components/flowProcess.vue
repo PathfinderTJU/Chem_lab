@@ -1,7 +1,7 @@
 <template>
     <div id="flowProcess">
       	<div class="img_block">
-            <img src="../assets/flowProcess.png" id="ex_img" ref="img" @load="setVideoHeight"/>
+            <img src="../assets/flowProcess.jpg" id="ex_img" ref="img" @load="setVideoHeight"/>
             <!-- 显示数据 -->
             <span class="param_show" v-for="(value, key) in params_show" :key="key.id" :id="key">{{value}}</span>
             <span class="control_show" v-for="(value, key) in options_show" :key="key" :id="key">

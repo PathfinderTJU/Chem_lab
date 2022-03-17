@@ -14,7 +14,7 @@
                         <el-button type="primary" @click="updateOption(key)" :disabled="(value.haveSwitch && !value.open) || releaseDisabled">修改</el-button>
                     </div>
                     <div v-if="value.haveSwitch">
-                        <el-switch v-model.lazy="value.open" active-text="打开" inactive-text="关闭" @change="updateSwitch(key)" :disabled="releaseDisabled"></el-switch>
+                        <el-switch v-model.lazy="switchBuffer" active-text="打开" inactive-text="关闭" @change="updateSwitch(key)" :disabled="releaseDisabled"></el-switch>
                     </div>
                 <i :style="{color:switchColor}" style="padding-left: 5px;font-size:30px;cursor:pointer;}" class="el-icon-s-tools" slot="reference"></i>
                 </el-popover>
@@ -72,7 +72,7 @@ export default {
     data(){
         return{
             ticketId: 1,
-            endTime: "12:56",
+            endTime: "---",
             snEndTime: [""],
             params_show:{ //显示的数据
                 'f3': '---',
@@ -236,6 +236,11 @@ export default {
                             message: "登录已过期",
                             type: 'error'
                         })
+                    }else if (res.status === 401){
+                        this.$message({
+                            message: "实验已结束",
+                            type: 'error'
+                        })
                     }else{
                         this.$message({
                             message: "未知错误" + res.status,
@@ -282,6 +287,11 @@ export default {
                     if (res.status === 402){
                         this.$message({
                             message: "登录已过期",
+                            type: 'error'
+                        })
+                    }else if (res.status === 401){
+                        this.$message({
+                            message: "实验已结束",
                             type: 'error'
                         })
                     }else{
@@ -355,6 +365,11 @@ export default {
                             message: "操作权已被占用",
                             type: 'error'
                         })
+                    }else if (res.status === 401){
+                        this.$message({
+                            message: "实验已结束",
+                            type: 'error'
+                        })
                     }else if (res.status === 402){
                         this.$message({
                             message: "登录已过期",
@@ -390,7 +405,6 @@ export default {
                         Authorization: 'Bearer  ' + localStorage.getItem("token") 
                     }
                 }).then(res => res.json()).then(res => {
-                    console.log(res);
                     if(res.success){
                         this.$message({
                             message: "已释放操作权",
@@ -403,6 +417,14 @@ export default {
                         if (res.status === 500){
                             this.$message({
                                 message: "登录已过期",
+                                type: 'error'
+                            })
+                        }else if (res.status === 401){
+                            this.nowController = "";
+                            this.applyDisabled = false;
+                            this.releaseDisabled = true;
+                            this.$message({
+                                message: "实验已结束",
                                 type: 'error'
                             })
                         }else{
@@ -457,6 +479,11 @@ export default {
                             message: "输入值非法",
                             type: 'error'
                         })
+                    }else if (res.status === 401){
+                        this.$message({
+                            message: "实验已结束",
+                            type: 'error'
+                        })
                     }else{
                         this.$message({
                             message: "未知错误" + res.status,
@@ -477,7 +504,7 @@ export default {
             let name = index + "";
             let requestData = {
                 paramName: name.toUpperCase(),
-                paramValue: Number(!this.switchBuffer)
+                paramValue: Number(this.switchBuffer)
             }
 
             fetch(this.URL + 'api/experiementing/' + this.ticketId + 
@@ -501,6 +528,11 @@ export default {
                     if (res.status === 402){
                         this.$message({
                             message: "登录已过期",
+                            type: 'error'
+                        })
+                    }else if (res.status === 401){
+                        this.$message({
+                            message: "实验已结束",
                             type: 'error'
                         })
                     }else{
@@ -536,6 +568,11 @@ export default {
                             message: "登录已过期",
                             type: 'error'
                         })
+                    }else if (res.status === 401){
+                        this.$message({
+                            message: "实验已结束",
+                            type: 'error'
+                        })
                     }else{
                         this.$message({
                             message: "未知错误" + res.status,
@@ -561,9 +598,10 @@ export default {
                 }
             }).then(res => res.json()).then(res => {
                 if(res.success){
-                    console.log(res);
+                    console.log(res.data.param);
                     let newData = res.data.param;
                     let nowToken = res.data.token;
+                    
 
                     //更新当前操作者状态
                     this.nowController = nowToken;
@@ -575,7 +613,21 @@ export default {
                         this.releaseDisabled = true;
                     }
 
+
                     // 更新数据
+                    this.params_show["f3"] = newData["f3"];
+                    this.params_show["f4"] = newData["f4"];
+                    this.params_show["t1"] = newData["t1"];
+                    this.params_show["t2"] = newData["t2"];
+                    this.params_show["t3"] = newData["t3"];
+                    this.params_show["p1"] = newData["p1"];
+                    this.params_show["p2"] = newData["p2"];
+                    this.params_show["p3"] = newData["p3"];
+                    this.params_show["p4"] = newData["p4"];
+                    this.params_show["p5"] = newData["p5"];
+                    this.params_show["l1"] = newData["l1"];
+                    this.params_show["l2"] = newData["l2"];
+
                     this.options_show["f1"].data = newData["f1"];
                     this.options_show['fxbkg'].open = Boolean(newData['fxbkg']);
                 }else{
@@ -584,6 +636,13 @@ export default {
                             message: "登录已过期",
                             type: 'error'
                         })
+                    }else if (res.status === 401){
+                        this.$message({
+                            message: "实验已结束",
+                            type: 'error'
+                        })
+                        clearInterval(this.dataTimer);
+                        clearInterval(this.msgAndTimeTimer);
                     }else{
                         this.$message({
                             message: "未知错误" + res.status,
@@ -618,6 +677,11 @@ export default {
                     if (res.status === 402){
                         this.$message({
                             message: "登录已过期",
+                            type: 'error'
+                        })
+                    }else if (res.status === 401){
+                        this.$message({
+                            message: "实验已结束",
                             type: 'error'
                         })
                     }else{

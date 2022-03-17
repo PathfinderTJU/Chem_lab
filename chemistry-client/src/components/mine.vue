@@ -168,7 +168,6 @@ export default {
         openNote(scope){
             let index = scope.$index;
 			let id = this.exData[index].ticketId;
-            this.noteVisible = true;
 
 			fetch(this.URL + "api/records/" + id, {
                 method: 'GET',
@@ -177,6 +176,7 @@ export default {
                 }
             }).then(res => res.json()).then(res => {
                 if (res.success){
+                    this.noteVisible = true;
                     let data = res.data;
                     let result = "";
 
@@ -205,6 +205,12 @@ export default {
                     }else if(res.status === 401){
                         this.$message({
                             message: "没有相关权限",
+                            type: 'error'
+                        })
+                    }else if(res.status === 403){
+                        this.noteVisible = false;
+                        this.$message({
+                            message: "未到实验结束时间",
                             type: 'error'
                         })
                     }else{
@@ -293,7 +299,7 @@ export default {
                 return date1.getTime() - date2.getTime() < 0;
             }
         },
-        // 学生：获取实验数据
+        // 学生：获取我的实验数据
         getExData(){
             let date = new Date(); // 今天的日期
             let today = this.formateDate(date);
@@ -415,7 +421,7 @@ export default {
                 let result = [];
 
                 for (let i = 0 ; i < data.length ; i++){
-                    if (data[i].school === "天津学"){
+                    if (data[i].school === "天津大学" || data[i].school === "天大"){
                         result.push(data[i]);
                     }
                 }
@@ -648,6 +654,11 @@ export default {
                         }else if(res.status === 401){
                             this.$message({
                                 message: "没有相关权限",
+                                type: 'error'
+                            })
+                        }else if(res.status === 403){
+                            this.$message({
+                                message: "未到实验结束时间",
                                 type: 'error'
                             })
                         }else{

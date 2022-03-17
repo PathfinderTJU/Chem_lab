@@ -438,8 +438,10 @@ export default {
 						that.isLoading = false;
 
 						if (res.success){
-							// 刷新数据
-							this.getData(this.nowType, this.nowPage);
+							// 显示为当前类型才刷新数据
+							if (this.nowType === requestData.type){
+								this.getData(this.nowType, this.nowPage);
+							}
 						
 							this.$message({
 								message: "新增成功",
@@ -505,6 +507,7 @@ export default {
 			let index = scope.$index;
 			let form = JSON.parse(JSON.stringify(this.accountData[index]));
 			form.confirm = ""; // 先添加，在赋值
+			form.password = ""; //清空密码
 			this.editForm = form;
 			this.editFormVisible = true;
 		},
