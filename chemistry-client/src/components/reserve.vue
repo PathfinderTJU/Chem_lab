@@ -100,10 +100,10 @@ export default {
             let now = new Date();
             let day = now.getDay() - 1;
             if (day === -1){
-                day = 7;
+                day = 6;
             }
-            this.startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 1);
-            this.endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7 - day);
+            this.startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day);
+            this.endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 6 - day);
         },
         // 格式化日期格式，传入Date对象，输出YYYY-DD-MM格式数据
         formateDate(date){
@@ -253,11 +253,15 @@ export default {
                     }
                 }).then(res => res.json()).then(res => {
                     if (res.success){
-
                         // 处理预约数据, 填入myTemp
                         let data = res.data;
                         for (let i = 0 ; i < data.length ; i++){
                             let d = data[i];
+
+                            // 过滤掉不是这个设备的预约信息
+                            if (d.ticket.resource.id !== this.nowType){
+                                continue;
+                            }
 
                             myTemp[d.ticket.date].myReserve[d.ticket.sn] = true; // 填充我是否预约了
                             myTemp[d.ticket.date].reserveId[d.ticket.sn] = d.id;

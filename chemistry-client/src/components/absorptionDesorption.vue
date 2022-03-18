@@ -75,18 +75,12 @@ export default {
             endTime: "---",
             snEndTime: [""],
             params_show:{ //显示的数据
-                'f3': '---',
-                'f4': '---',
                 't1': '---',
                 't2': '---',
                 't3': '---',
-                'p1': '---',
-                'p2': '---',
+                't4': '---',
                 'p3': '---',
-                'p4': '---',
-                'p5': '---',
-                'l1': '---',
-                'l2': '---'
+                'a1': '---'
             }, 
             cams: [
                 {
@@ -113,95 +107,100 @@ export default {
             releaseDisabled: true, //释放令牌禁用
             switchColor: "#E6A23C", //齿轮颜色
             options_show: { //操作选项数据
-                "lixin1": {
+                "qbkg": {
                     id: 1,
-                    name: '离心泵1频率',
-                    haveSwitch: true,
-                    haveData: true,
-                    open: false,
-                    data: '---',
-                    controlVisible: false
-                },
-                "lixin2": {
-                    id: 2,
-                    name: '离心泵2频率',
-                    haveSwitch: true,
-                    haveData: true,
-                    open: false,
-                    data: '---',
-                    controlVisible: false
-                },
-                "xuanwo": {
-                    id: 3,
-                    name: '旋涡风机频率',
-                    haveSwitch: true,
-                    haveData: true,
-                    open: false,
-                    data: '---',
-                    controlVisible: false
-                },
-                "fxbkg": {
-                    id: 4,
-                    name: '分析气泵',
-                    haveSwitch: true,
-                    haveData: false,
-                    open: false,
-                    controlVisible: false
-                },
-                "f1": {
-                    id: 5,
-                    name: 'CO2流量',
-                    haveSwitch: false,
-                    haveData: true,
-                    data: '---',
-                    controlVisible: false
-                },
-                "airf": {
-                    id: 6,
-                    name: '空气流量F',
-                    haveSwitch: false,
-                    haveData: true,
-                    data: '---',
-                    controlVisible: false
-                },
-                "airfvb": {
-                    id: 7,
-                    name: '空气流量Fvb',
-                    haveSwitch: false,
-                    haveData: true,
-                    data: '---',
-                    controlVisible: false
-                },
-                "m1": {
-                    id: 8,
-                    name: 'M1开度（%）',
-                    haveSwitch: false,
-                    haveData: true,
-                    data: '---',
-                    controlVisible: false
-                },
-                "m2": {
-                    id: 9,
-                    name: 'M2开度（%）',
-                    haveSwitch: false,
-                    haveData: true,
-                    data: '---',
-                    controlVisible: false
-                },
-                "m3": {
-                    id: 10,
-                    name: 'M3开度（%）',
-                    haveSwitch: false,
-                    haveData: true,
-                    data: '---',
-                    controlVisible: false
-                },
-                "beng": {
-                    id: 11,
                     name: '气泵',
                     haveSwitch: true,
                     haveData: false,
                     open: false,
+                    switchName: "qbkg",
+                    controlVisible: false
+                },
+                "fxbkg": {
+                    id: 2,
+                    name: '分析泵',
+                    haveSwitch: true,
+                    haveData: false,
+                    open: false,
+                    switchName: "fxbkg",
+                    controlVisible: false
+                },
+                "pl1": {
+                    id: 3,
+                    name: '风机(PL1)',
+                    haveSwitch: true,
+                    haveData: true,
+                    open: false,
+                    data: '---',
+                    switchName: "fjkg",
+                    dataName: "pl1",
+                    controlVisible: false
+                },
+                "pl2": {
+                    id: 4,
+                    name: '解析水泵(PL2)',
+                    haveSwitch: true,
+                    haveData: true,
+                    open: false,
+                    data: '---',
+                    switchName: "lxb1KG",
+                    dataName: "pl2",
+                    controlVisible: false
+                },
+                "pl3": {
+                    id: 5,
+                    name: '吸收水泵(PL3)',
+                    haveSwitch: true,
+                    haveData: true,
+                    open: false,
+                    data: '---',
+                    switchName: "lxb2KG",
+                    dataName: "pl3",
+                    controlVisible: false
+                },
+                "m1": {
+                    id: 6,
+                    name: '吸收液流量调节阀(M1)',
+                    haveSwitch: false,
+                    haveData: true,
+                    data: '---',
+                    dataName: "kd1",
+                    controlVisible: false
+                },
+                "m2": {
+                    id: 7,
+                    name: '解吸液流量调节阀(M2)',
+                    haveSwitch: false,
+                    haveData: true,
+                    data: '---',
+                    dataName: "kd2",
+                    controlVisible: false
+                },
+                "m3": {
+                    id: 8,
+                    name: '解吸气体流量调节阀(M3)',
+                    haveSwitch: false,
+                    haveData: true,
+                    data: '---',
+                    dataName: "kd3",
+                    controlVisible: false
+                },
+                "f1": {
+                    id: 9,
+                    name: 'CO2流量(F1)',
+                    haveSwitch: false,
+                    haveData: true,
+                    data: '---',
+                    dataName: "f1SV",
+                    controlVisible: false
+                },
+                "f2": {
+                    id: 10,
+                    name: '空气流量(F2)',
+                    haveSwitch: false,
+                    haveData: true,
+                    data: '---',
+                    dataName: "f2SV",
                     controlVisible: false
                 }   
             }, // 操作选项的数据
@@ -446,6 +445,7 @@ export default {
         // 修改数据
         updateOption(index){
             let name = index + "";
+            name = this.options_show[name].dataName;
             let requestData = {
                 paramName: name.toUpperCase(),
                 paramValue: this.dataBuffer + ""
@@ -502,6 +502,7 @@ export default {
         // 修改开关状态
         updateSwitch(index){
             let name = index + "";
+            name = this.options_show[name].switchName;
             let requestData = {
                 paramName: name.toUpperCase(),
                 paramValue: Number(this.switchBuffer)
@@ -598,7 +599,6 @@ export default {
                 }
             }).then(res => res.json()).then(res => {
                 if(res.success){
-                    console.log(res.data.param);
                     let newData = res.data.param;
                     let nowToken = res.data.token;
                     
@@ -615,21 +615,26 @@ export default {
 
 
                     // 更新数据
-                    this.params_show["f3"] = newData["f3"];
-                    this.params_show["f4"] = newData["f4"];
                     this.params_show["t1"] = newData["t1"];
                     this.params_show["t2"] = newData["t2"];
                     this.params_show["t3"] = newData["t3"];
-                    this.params_show["p1"] = newData["p1"];
-                    this.params_show["p2"] = newData["p2"];
+                    this.params_show["t4"] = newData["t4"];
+                    this.params_show["a1"] = newData["a1"];
                     this.params_show["p3"] = newData["p3"];
-                    this.params_show["p4"] = newData["p4"];
-                    this.params_show["p5"] = newData["p5"];
-                    this.params_show["l1"] = newData["l1"];
-                    this.params_show["l2"] = newData["l2"];
 
-                    this.options_show["f1"].data = newData["f1"];
+                    this.options_show["qbkg"].open = Boolean(newData["qbkg"]);
                     this.options_show['fxbkg'].open = Boolean(newData['fxbkg']);
+                    this.options_show['f1'].data = newData['f1'];
+                    this.options_show['f2'].data = newData['f2'];
+                    this.options_show['m1'].data = newData['m1'];
+                    this.options_show['m2'].data = newData['m2'];
+                    this.options_show['m3'].data = newData['m3'];
+                    this.options_show['pl1'].data = newData['pl1'];
+                    this.options_show['pl1'].open = Boolean(newData['fjkg']);
+                    this.options_show['pl2'].data = newData['pl2'];
+                    this.options_show['pl2'].open = Boolean(newData['lxb1KG']);
+                    this.options_show['pl3'].data = newData['pl3'];
+                    this.options_show['pl3'].open = Boolean(newData['lxb2KG']);
                 }else{
                     if (res.status === 402){
                         this.$message({
@@ -969,59 +974,54 @@ export default {
     width: 100%;
 }
 
-#lixin1{
-    top: 83.5%;
-    left: 43%;
-}
-
-#lixin2{
-    top: 83.5%;
-    left: 56%;
-}
-
-#xuanwo{
-    top: 82%;
-    left: 84%;
+#qbkg{
+    top: 83%;
+    left: 15%;
 }
 
 #fxbkg{
-    top: 45%;
-    left: 22%;
-}
-
-#airf{
-    top: 30%;
-    left: 88%;
-}
-
-#airfvb{
-    top: 34%;
-    left: 16.3%;
+    top: 46%;
+    left: 25%;
 }
 
 #f1{
-    top: 27%;
-    left: 3.5%;
+    top: 24%;
+    left: 9%;
 }
 
-#beng{
-    top: 82%;
-    left: 15.5%;
+#f2{
+    top: 35%;
+    left: 16%;
 }
 
 #m1{
-    top: 41.5%;
-    left: 43%;
+    top: 42%;
+    left: 47%;
 }
 
 #m2{
-    top: 41.5%;
-    left: 59%;
+    top: 42%;
+    left: 65%;
 }
 
 #m3{
-    top: 64%;
-    left: 87%;
+    top: 62%;
+    left: 90%;
+}
+
+#pl1{
+    left: 86%;
+    top: 83%;
+}
+
+#pl2{
+    left: 46%;
+    top: 85%;
+}
+
+#pl3{
+    left: 59%;
+    top: 85%;
 }
 
 /* 数据位置 */
@@ -1034,64 +1034,33 @@ export default {
     z-index: 5;
 }
 
-#f3{
-    top: 30.5%;
-    left: 42%;
-}
-
-#f4{
-    top: 30.5%;
-    left: 57%;
-}
-
-
 #t1{
-    top: 7%;
-    left: 14%;
+    top: 10%;
+    left: 11%;
 }
 
 #t2{
-    top: 81%;
-    left: 30%;
+    top: 77.5%;
+    left: 31.5%;
 }
 
 #t3{
-    top: 23%;
-    left: 91%;
+    top: 18%;
+    left: 92%;
 }
 
-#p1{
-    top: 36.5%;
-    left: 42%;
+#t4{
+    top: 77.5%;
+    left: 80.5%;
 }
 
-#p2{
-    top: 36.5%;
-    left: 60%;
+#a1{
+    top: 30%;
+    left: 30.5%;
 }
 
 #p3{
-    top: 11%;
-    left: 35%;
-}
-
-#p4{
-    top: 11%;
+    top: 15%;
     left: 68.5%;
-}
-
-#p5{
-    top: 45%;
-    left: 9.5%;
-}
-
-#l1{
-    top: 74%;
-    left: 43%;
-}
-
-#l2{
-    top: 74%;
-    left: 58%;
 }
 </style>

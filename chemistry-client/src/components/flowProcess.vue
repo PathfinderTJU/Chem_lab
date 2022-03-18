@@ -1,6 +1,6 @@
 <template>
     <div id="flowProcess">
-      	<div class="img_block">
+        <div class="img_block">
             <img src="../assets/flowProcess.jpg" id="ex_img" ref="img" @load="setVideoHeight"/>
             <!-- 显示数据 -->
             <span class="param_show" v-for="(value, key) in params_show" :key="key.id" :id="key">{{value}}</span>
@@ -14,7 +14,7 @@
                         <el-button type="primary" @click="updateOption(key)" :disabled="(value.haveSwitch && !value.open) || releaseDisabled">修改</el-button>
                     </div>
                     <div v-if="value.haveSwitch">
-                        <el-switch v-model.lazy="value.open" active-text="打开" inactive-text="关闭" @change="updateSwitch(key)" :disabled="releaseDisabled"></el-switch>
+                        <el-switch v-model.lazy="switchBuffer" active-text="打开" inactive-text="关闭" @change="updateSwitch(key)" :disabled="releaseDisabled"></el-switch>
                     </div>
                 <i :style="{color:switchColor}" style="padding-left: 5px;font-size:30px;cursor:pointer;}" class="el-icon-s-tools" slot="reference"></i>
                 </el-popover>
@@ -22,7 +22,7 @@
         </div>
         <div class="side_block" ref="sideBlock">
             <!-- 标题和时间 -->
-            <div class="ex_title">吸收-解吸实验</div>
+            <div class="ex_title">流动过程实验</div>
             <div class="ex_time">实验结束时间：<span style="font-weight:bold;color: #409EFF">{{endTime}}</span></div>
             <!-- 摄像头 -->
             <iframe :src="nowVideo.url" id="ysopen" ref="video" :style="{height:videoHeight + 'px'}" allowfullscreen></iframe>
@@ -63,30 +63,24 @@
                 </div>
             </div>
         </el-drawer>
-    </div>
+    </div> 
 </template>
 
 <script>
 export default {
     name: 'flowProcess',
     data(){
-     	return{
+        return{
             ticketId: 1,
-            endTime: "12:56",
+            endTime: "---",
             snEndTime: [""],
             params_show:{ //显示的数据
-                'f3': '---',
-                'f4': '---',
-                't1': '---',
-                't2': '---',
-                't3': '---',
+                'f1': '---',
                 'p1': '---',
                 'p2': '---',
                 'p3': '---',
-                'p4': '---',
-                'p5': '---',
-                'l1': '---',
-                'l2': '---'
+                'j1': '---',
+                't1': '---'
             }, 
             cams: [
                 {
@@ -113,97 +107,35 @@ export default {
             releaseDisabled: true, //释放令牌禁用
             switchColor: "#E6A23C", //齿轮颜色
             options_show: { //操作选项数据
-                "lixin1": {
+                "pl": {
                     id: 1,
-                    name: '离心泵1频率',
+                    name: '离心泵变频器频率(PL)',
                     haveSwitch: true,
                     haveData: true,
                     open: false,
                     data: '---',
+                    switchName: "lxbkg",
+                    dataName: 'pl',
                     controlVisible: false
                 },
-                "lixin2": {
+                "m1pv": {
                     id: 2,
-                    name: '离心泵2频率',
-                    haveSwitch: true,
+                    name: '阀V25开度(M1)',
+                    haveSwitch: false,
                     haveData: true,
-                    open: false,
                     data: '---',
+                    dataName: "m1sv",
                     controlVisible: false
                 },
-                "xuanwo": {
+                "m2pv":{
                     id: 3,
-                    name: '旋涡风机频率',
-                    haveSwitch: true,
-                    haveData: true,
-                    open: false,
-                    data: '---',
-                    controlVisible: false
-                },
-                "fxbkg": {
-                    id: 4,
-                    name: '分析气泵',
-                    haveSwitch: true,
-                    haveData: false,
-                    open: false,
-                    controlVisible: false
-                },
-                "f1": {
-                    id: 5,
-                    name: 'CO2流量',
+                    name: '阀V22开度(M2)',
                     haveSwitch: false,
                     haveData: true,
                     data: '---',
+                    switchName: "m2sv",
                     controlVisible: false
-                },
-                "airf": {
-                    id: 6,
-                    name: '空气流量F',
-                    haveSwitch: false,
-                    haveData: true,
-                    data: '---',
-                    controlVisible: false
-                },
-                "airfvb": {
-                    id: 7,
-                    name: '空气流量Fvb',
-                    haveSwitch: false,
-                    haveData: true,
-                    data: '---',
-                    controlVisible: false
-                },
-                "m1": {
-                    id: 8,
-                    name: 'M1开度（%）',
-                    haveSwitch: false,
-                    haveData: true,
-                    data: '---',
-                    controlVisible: false
-                },
-                "m2": {
-                    id: 9,
-                    name: 'M2开度（%）',
-                    haveSwitch: false,
-                    haveData: true,
-                    data: '---',
-                    controlVisible: false
-                },
-                "m3": {
-                    id: 10,
-                    name: 'M3开度（%）',
-                    haveSwitch: false,
-                    haveData: true,
-                    data: '---',
-                    controlVisible: false
-                },
-                "beng": {
-                    id: 11,
-                    name: '气泵',
-                    haveSwitch: true,
-                    haveData: false,
-                    open: false,
-                    controlVisible: false
-                }   
+                }
             }, // 操作选项的数据
             members: [], // 实验中的成员
             memberVisible: false, // 成员抽屉面板控制
@@ -215,7 +147,7 @@ export default {
             timeChecked: false, // 是否发送过到时警告了
             dataTimer: -1, // 存储刷新数据定时器的变量
             msgAndTimeTimer: -1 // 存储刷新消息和结束时间的变量
-    	}
+        }
     },
     methods: {
         // 获取结束时间
@@ -234,6 +166,11 @@ export default {
                     if (res.status === 402){
                         this.$message({
                             message: "登录已过期",
+                            type: 'error'
+                        })
+                    }else if (res.status === 401){
+                        this.$message({
+                            message: "实验已结束",
                             type: 'error'
                         })
                     }else{
@@ -282,6 +219,11 @@ export default {
                     if (res.status === 402){
                         this.$message({
                             message: "登录已过期",
+                            type: 'error'
+                        })
+                    }else if (res.status === 401){
+                        this.$message({
+                            message: "实验已结束",
                             type: 'error'
                         })
                     }else{
@@ -355,6 +297,11 @@ export default {
                             message: "操作权已被占用",
                             type: 'error'
                         })
+                    }else if (res.status === 401){
+                        this.$message({
+                            message: "实验已结束",
+                            type: 'error'
+                        })
                     }else if (res.status === 402){
                         this.$message({
                             message: "登录已过期",
@@ -390,7 +337,6 @@ export default {
                         Authorization: 'Bearer  ' + localStorage.getItem("token") 
                     }
                 }).then(res => res.json()).then(res => {
-                    console.log(res);
                     if(res.success){
                         this.$message({
                             message: "已释放操作权",
@@ -403,6 +349,14 @@ export default {
                         if (res.status === 500){
                             this.$message({
                                 message: "登录已过期",
+                                type: 'error'
+                            })
+                        }else if (res.status === 401){
+                            this.nowController = "";
+                            this.applyDisabled = false;
+                            this.releaseDisabled = true;
+                            this.$message({
+                                message: "实验已结束",
                                 type: 'error'
                             })
                         }else{
@@ -424,6 +378,7 @@ export default {
         // 修改数据
         updateOption(index){
             let name = index + "";
+            name = this.options_show[name].dataName;
             let requestData = {
                 paramName: name.toUpperCase(),
                 paramValue: this.dataBuffer + ""
@@ -457,6 +412,11 @@ export default {
                             message: "输入值非法",
                             type: 'error'
                         })
+                    }else if (res.status === 401){
+                        this.$message({
+                            message: "实验已结束",
+                            type: 'error'
+                        })
                     }else{
                         this.$message({
                             message: "未知错误" + res.status,
@@ -475,9 +435,10 @@ export default {
         // 修改开关状态
         updateSwitch(index){
             let name = index + "";
+            name = this.options_show[name].switchName;
             let requestData = {
                 paramName: name.toUpperCase(),
-                paramValue: Number(!this.switchBuffer)
+                paramValue: Number(this.switchBuffer)
             }
 
             fetch(this.URL + 'api/experiementing/' + this.ticketId + 
@@ -503,6 +464,11 @@ export default {
                             message: "登录已过期",
                             type: 'error'
                         })
+                    }else if (res.status === 401){
+                        this.$message({
+                            message: "实验已结束",
+                            type: 'error'
+                        })
                     }else{
                         this.$message({
                             message: "未知错误" + res.status,
@@ -520,7 +486,7 @@ export default {
         },
         // 刷新成员列表
         refreshMember(){
-            fetch(this.URL + '/api/experiementing/' + this.ticketId + 
+            fetch(this.URL + 'api/experiementing/' + this.ticketId + 
                 '/getStudents?ticketId=' + this.ticketId, {
                 method: 'GET',
                 headers: {
@@ -534,6 +500,11 @@ export default {
                     if (res.status === 402){
                         this.$message({
                             message: "登录已过期",
+                            type: 'error'
+                        })
+                    }else if (res.status === 401){
+                        this.$message({
+                            message: "实验已结束",
                             type: 'error'
                         })
                     }else{
@@ -563,6 +534,7 @@ export default {
                 if(res.success){
                     let newData = res.data.param;
                     let nowToken = res.data.token;
+                    
 
                     //更新当前操作者状态
                     this.nowController = nowToken;
@@ -574,15 +546,32 @@ export default {
                         this.releaseDisabled = true;
                     }
 
+
                     // 更新数据
-                    this.options_show["f1"].data = newData["f1"];
-                    this.options_show['fxbkg'].open = Boolean(newData['fxbkg']);
+                    this.params_show["f1"] = newData["f1"];
+                    this.params_show["j1"] = newData["j1"];
+                    this.params_show["t1"] = newData["t1"];
+                    this.params_show["p1"] = newData["p1"];
+                    this.params_show["p2"] = newData["p2"];
+                    this.params_show["p3"] = newData["p3"];
+
+                    this.options_show["pl"].open = Boolean(newData["lxbkg"]);
+                    this.options_show['pl'].data = newData['pl'];
+                    this.options_show['m1pv'].data = newData['m1pv'];
+                    this.options_show['m2pv'].data = newData['m2pv'];
                 }else{
                     if (res.status === 402){
                         this.$message({
                             message: "登录已过期",
                             type: 'error'
                         })
+                    }else if (res.status === 401){
+                        this.$message({
+                            message: "实验已结束",
+                            type: 'error'
+                        })
+                        clearInterval(this.dataTimer);
+                        clearInterval(this.msgAndTimeTimer);
                     }else{
                         this.$message({
                             message: "未知错误" + res.status,
@@ -617,6 +606,11 @@ export default {
                     if (res.status === 402){
                         this.$message({
                             message: "登录已过期",
+                            type: 'error'
+                        })
+                    }else if (res.status === 401){
+                        this.$message({
+                            message: "实验已结束",
                             type: 'error'
                         })
                     }else{
@@ -683,6 +677,11 @@ export default {
             return '关闭提示'
         }
     },
+    created() {
+        // 获取ticketId
+        let query = this.$route.query;
+        this.ticketId = +query.ticketId;
+    },
     mounted() {
         window.addEventListener('beforeunload', e => this.beforeunloadHandler(e));
         this.nowVideo = this.cams[0];
@@ -705,10 +704,11 @@ export default {
         }, 1000);
     },
     destroyed(){
+        // 阻止关闭
+        window.removeEventListener('beforeunload', e => this.stopExit(e));
         // 清除定时器
         clearInterval(this.dataTimer);
         clearInterval(this.msgAndTimeTimer);
-        window.removeEventListener('beforeunload', e => this.stopExit(e));
     }
 }
 </script>
@@ -898,59 +898,20 @@ export default {
     width: 100%;
 }
 
-#lixin1{
-    top: 83.5%;
-    left: 43%;
+
+#pl{
+    top:92%;
+    left: 28%;
 }
 
-#lixin2{
-    top: 83.5%;
-    left: 56%;
+#m1pv{
+    left: 21%;
+    top: 38%;
 }
 
-#xuanwo{
-    top: 82%;
-    left: 84%;
-}
-
-#fxbkg{
-    top: 45%;
-    left: 22%;
-}
-
-#airf{
-    top: 30%;
-    left: 88%;
-}
-
-#airfvb{
-    top: 34%;
-    left: 16.3%;
-}
-
-#f1{
-    top: 27%;
-    left: 3.5%;
-}
-
-#beng{
-    top: 82%;
-    left: 15.5%;
-}
-
-#m1{
-    top: 41.5%;
-    left: 43%;
-}
-
-#m2{
-    top: 41.5%;
-    left: 59%;
-}
-
-#m3{
-    top: 64%;
-    left: 87%;
+#m2pv{
+    left: 85%;
+    top: 51%;
 }
 
 /* 数据位置 */
@@ -963,64 +924,34 @@ export default {
     z-index: 5;
 }
 
-#f3{
-    top: 30.5%;
-    left: 42%;
-}
-
-#f4{
-    top: 30.5%;
-    left: 57%;
-}
-
-
-#t1{
-    top: 7%;
-    left: 14%;
-}
-
-#t2{
-    top: 81%;
-    left: 30%;
-}
-
-#t3{
-    top: 23%;
-    left: 91%;
-}
-
 #p1{
-    top: 36.5%;
-    left: 42%;
+    top: 56.5%;
+    left: 46.5%;
 }
 
 #p2{
-    top: 36.5%;
-    left: 60%;
+    top: 74.5%;
+    left: 13%;
 }
 
 #p3{
-    top: 11%;
-    left: 35%;
+    top: 81%;
+    left: 27%;
 }
 
-#p4{
-    top: 11%;
-    left: 68.5%;
+#f1{
+    top: 58.5%;
+    left: 60%;
 }
 
-#p5{
-    top: 45%;
-    left: 9.5%;
+#j1{
+    top: 87%;
+    left: 18%;
 }
 
-#l1{
-    top: 74%;
-    left: 43%;
+#t1{
+    top: 77.5%;
+    left: 44.5%;
 }
 
-#l2{
-    top: 74%;
-    left: 58%;
-}
 </style>

@@ -477,10 +477,10 @@ export default {
             let now = new Date();
             let day = now.getDay() - 1;
             if (day === -1){
-                day = 7;
+                day = 6;
             }
-            this.startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 1);
-            this.endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7 - day);
+            this.startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day);
+            this.endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 6 - day);
         },
         // 获取日开放计划
         getPlanDay(){
