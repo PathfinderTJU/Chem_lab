@@ -21,10 +21,10 @@ export default {
             nowId: -1,// 当前设备ID
             type: '', // 当前设备类型
             urls: {
-                "A": "/rectification",
+                "A": "/conductHeat",
                 "B": "/absorptionDesorption",
-                "C": "/conductHeat",
-                "D": "/flowProcess"
+                "C": "/flowProcess",
+                "D": "/rectification"
             },
             devices: [], //设备列表
         }

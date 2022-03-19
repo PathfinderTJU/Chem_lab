@@ -83,10 +83,10 @@ export default {
             editFormVisible: false, //控制编辑弹窗
             nowType: "", //当前设备类型
             types: [ //设备类型
-                {value: 'A', label: "精馏"},
+                {value: 'A', label: "化工传热"},
                 {value: 'B', label: "吸收-解吸"},
-                {value: 'C', label: "化工传热"},
-                {value: 'D', label: "流动过程"}
+                {value: 'C', label: "流动过程"},
+                {value: 'D', label: "精馏"}
             ],
             isDisabled: false, //禁用表单提交按钮
             isLoading: false, //控制加载状态的出现

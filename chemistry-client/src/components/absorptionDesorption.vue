@@ -7,7 +7,7 @@
             <span class="control_show" v-for="(value, key) in options_show" :key="key" :id="key">
                 <span class="control_data" v-if="value.haveData">{{value.data}}</span>
                 <span class="control_data" v-if="value.haveSwitch">{{value.open ? '打开' : '关闭'}}</span>
-                <el-popover class="control_pop" placement="top" trigger="click" width="160" v-model="value.controlVisible" @show="showControl(key)" @hide="closeControl(key)">
+                <el-popover class="control_pop" placement="top" trigger="click" width="160" v-model="value.controlVisible" @show="showControl(key)">
                     <div>{{value.name}}</div>
                     <div class="control_input" v-if="value.haveData">
                         <el-input v-model="dataBuffer"></el-input>
@@ -326,11 +326,6 @@ export default {
                 this.switchBuffer = this.options_show[key].open;
             }
         },
-        // 关闭操作卡，清空缓冲区
-        closeControl(key){
-            this.dataBuffer = "";
-            this.switchBuffer = "";
-        },
         // 显示成员信息和聊天框
         showMember(){
             this.memberVisible = true;
@@ -444,7 +439,9 @@ export default {
         },
         // 修改数据
         updateOption(index){
+            let that = this;
             let name = index + "";
+            let temp_name = name;
             name = this.options_show[name].dataName;
             let requestData = {
                 paramName: name.toUpperCase(),
@@ -469,6 +466,7 @@ export default {
                         type: 'success'
                     })
                 }else{
+                    that.dataBuffer = that.options_show[temp_name].data;
                     if (res.status === 402){
                         this.$message({
                             message: "登录已过期",
@@ -502,6 +500,7 @@ export default {
         // 修改开关状态
         updateSwitch(index){
             let name = index + "";
+            let temp_name = name;
             name = this.options_show[name].switchName;
             let requestData = {
                 paramName: name.toUpperCase(),
@@ -526,6 +525,7 @@ export default {
                         type: 'success'
                     })
                 }else{
+                    this.switchBuffer = this.options_show[temp_name].open;
                     if (res.status === 402){
                         this.$message({
                             message: "登录已过期",
@@ -800,6 +800,11 @@ export default {
     display: flex;
     justify-content: space-between;
     transition: all .4s;
+    image-rendering: -moz-crisp-edges; /* Firefox */     
+    image-rendering: -o-crisp-edges; /* Opera */      
+    image-rendering: -webkit-optimize-contrast; /*Webkit (non-standard naming) */ 
+    image-rendering: crisp-edges; 
+    -ms-interpolation-mode: nearest-neighbor; /* IE (non-standard property) */
 }
 
 .img_block{
