@@ -83,20 +83,20 @@ export default {
                 'a1': '---'
             }, 
             cams: [
+                // {
+                //     "url": "https://open.ys7.com/jssdk/theme.html?url=ezopen://open.ys7.com/E33136311/1.hd.live&accessToken=at.1sn9bw7j0llu53q698y06id777b4otkw-5bzy7rwdye-0879en4-tkefsfdxe&id=ysopen",
+                //     "title": "正对摄像头1"
+                // },
                 {
-                    "url": "https://open.ys7.com/jssdk/theme.html?url=ezopen://open.ys7.com/E33136313/1.live&accessToken=at.cff96jf31wykuf4u1slsv1q30mjf68jk-45gicg5yqz-0uhwyqm-s4lsfznkn&id=ysopen",
-                    "title": "正对摄像头1"
-                },
-                {
-                    "url": "https://open.ys7.com/jssdk/theme.html?url=ezopen://open.ys7.com/C78957921/1.live&accessToken=ra.2xirbtir599z2cp2dwlaxeglbrld1n4w-5mmn4448p3-02e06mr-vi8cgdax5&id=ysopen",
+                    "url": "https://open.ys7.com/jssdk/theme.html?url=ezopen://open.ys7.com/E33136311/2.hd.live&accessToken=at.1sn9bw7j0llu53q698y06id777b4otkw-5bzy7rwdye-0879en4-tkefsfdxe&id=ysopen",
                     "title": "正对摄像头2"
                 },
                 {
-                    "url": "https://open.ys7.com/jssdk/theme.html?url=ezopen://open.ys7.com/C78957921/1.live&accessToken=ra.2xirbtir599z2cp2dwlaxeglbrld1n4w-5mmn4448p3-02e06mr-vi8cgdax5&id=ysopen",
+                    "url": "https://open.ys7.com/jssdk/theme.html?url=ezopen://open.ys7.com/E33136311/3.hd.live&accessToken=at.1sn9bw7j0llu53q698y06id777b4otkw-5bzy7rwdye-0879en4-tkefsfdxe&id=ysopen",
                     "title": "正对摄像头3"
                 },
                 {
-                    "url": "https://open.ys7.com/jssdk/theme.html?url=ezopen://open.ys7.com/C78957921/1.live&accessToken=ra.2xirbtir599z2cp2dwlaxeglbrld1n4w-5mmn4448p3-02e06mr-vi8cgdax5&id=ysopen",
+                    "url": "https://open.ys7.com/jssdk/theme.html?url=ezopen://open.ys7.com/E33136311/4.hd.live&accessToken=at.1sn9bw7j0llu53q698y06id777b4otkw-5bzy7rwdye-0879en4-tkefsfdxe&id=ysopen",
                     "title": "正对摄像头4"
                 }
             ], //摄像头数据
