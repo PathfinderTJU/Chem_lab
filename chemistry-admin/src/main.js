@@ -12,6 +12,7 @@ Vue.use(ElementUI)
 Vue.prototype.URL = URL
 Vue.prototype.PUBLICKEY = ""
 Vue.config.productionTip = false
+Vue.prototype.webName = "化工学院远程实验管理平台"
 
 /* eslint-disable no-new */
 new Vue({

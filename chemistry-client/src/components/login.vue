@@ -6,7 +6,7 @@
             </el-header>
             <el-main class="main">
                 <div class="title_block">
-                    <div id="title">化工虚拟实验平台</div>
+                    <div id="title">{{webName}}</div>
                     <div class="description"></div>
                     <div class="description"></div>
                 </div>
@@ -42,6 +42,7 @@ export default {
     name: 'login',
     data(){
         return{
+            webName: this.webName,
             type: true, //登录类型，true为学生，false为教师
             form: { // 用户信息表单
                 username: "",

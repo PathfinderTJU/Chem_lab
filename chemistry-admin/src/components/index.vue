@@ -6,7 +6,7 @@
                 <div class="logo_block">
                     <img id="logo" src="../assets/pictures/logo.png"/>
                 </div>
-                <div id="title">化工学院远程实验管理平台</div>
+                <div id="title">{{ webName }}</div>
                 <el-button id="logout" @click="logout" type="text">退出登录</el-button>
             </el-header>
             <el-container class="container">
@@ -16,9 +16,15 @@
                         <el-menu-item index="/index/account">
                             <span slot="title">账户管理</span>
                         </el-menu-item>
-                        <el-menu-item index="/index/device">
+                        <el-submenu index="/index/device">
                             <span slot="title">设备管理</span>
-                        </el-menu-item>
+                            <el-menu-item index="/index/device">
+                                <span slot="title">设备管理</span>
+                            </el-menu-item>
+                            <el-menu-item index="/index/init">
+                                <span slot="title">初始值设置</span>
+                            </el-menu-item>
+                        </el-submenu>
                         <el-submenu index="/index/plan">
                             <span slot="title" >开放计划管理</span>
                             <el-menu-item index="/index/plan">
@@ -54,6 +60,11 @@
 <script>
 export default {
     name: 'index',
+    data(){
+        return{
+            webName: this.webName
+        }
+    },
     methods: {
         logout(){
             localStorage.setItem("token", "");

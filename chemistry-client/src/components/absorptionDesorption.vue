@@ -25,8 +25,8 @@
             <div class="ex_title">吸收-解吸实验</div>
             <div class="ex_time">实验结束时间：<span style="font-weight:bold;color: #409EFF">{{endTime}}</span></div>
             <!-- 摄像头 -->
-            <iframe :src="nowVideo.url" id="ysopen" ref="video" :style="{height:videoHeight + 'px'}" allowfullscreen></iframe>
-            <el-pagination id="video_change_button" small layout="prev, pager, next" :total="40" @current-change="changeCam"></el-pagination>
+            <iframe :src=camSrc   id="ysopen" ref="video" :style="{height:videoHeight + 'px'}" allowfullscreen></iframe>
+            <el-pagination id="video_change_button" small layout="prev, pager, next" :total=camNum @current-change="changeCam"></el-pagination>
             <!-- 控制模块 -->
             <div class="control_block">
                 <div id="now_controller">
@@ -37,6 +37,10 @@
                 </div>
                 <el-button class="control_button" type="primary" @click="applyToken" :disabled="applyDisabled">申请操作</el-button>
                 <el-button class="control_button" type="warning" @click="releaseToken" :disabled="releaseDisabled">结束操作</el-button>
+            </div>
+            <div class="control_block">
+                <el-button class="control_button" type="info" @click="initDevice" :disabled="releaseDisabled" slot="reference">初始化设备</el-button>
+                <el-button class="control_button" type="info" @click="closeDevice" :disabled="releaseDisabled" slot="reference">关闭设备</el-button>
             </div>
             <!-- 退出按钮 -->
             <div class="ex_bottom">
@@ -72,6 +76,7 @@ export default {
     data(){
         return{
             ticketId: 1,
+            deviceId: -1,
             endTime: "---",
             snEndTime: [""],
             params_show:{ //显示的数据
@@ -79,28 +84,20 @@ export default {
                 't2': '---',
                 't3': '---',
                 't4': '---',
+                'f1': '---',
+                'f2': '---',
+                'f4': '---',
+                'f5': '---',
+                'p1': '---',
+                'p2': '---',
                 'p3': '---',
-                'a1': '---'
+                'a1': '---',
+                'l1': '---',
+                'l2': '---',
             }, 
-            cams: [
-                // {
-                //     "url": "https://open.ys7.com/jssdk/theme.html?url=ezopen://open.ys7.com/E33136311/1.hd.live&accessToken=at.1sn9bw7j0llu53q698y06id777b4otkw-5bzy7rwdye-0879en4-tkefsfdxe&id=ysopen",
-                //     "title": "正对摄像头1"
-                // },
-                {
-                    "url": "https://open.ys7.com/jssdk/theme.html?url=ezopen://open.ys7.com/E33136311/2.hd.live&accessToken=at.1sn9bw7j0llu53q698y06id777b4otkw-5bzy7rwdye-0879en4-tkefsfdxe&id=ysopen",
-                    "title": "正对摄像头2"
-                },
-                {
-                    "url": "https://open.ys7.com/jssdk/theme.html?url=ezopen://open.ys7.com/E33136311/3.hd.live&accessToken=at.1sn9bw7j0llu53q698y06id777b4otkw-5bzy7rwdye-0879en4-tkefsfdxe&id=ysopen",
-                    "title": "正对摄像头3"
-                },
-                {
-                    "url": "https://open.ys7.com/jssdk/theme.html?url=ezopen://open.ys7.com/E33136311/4.hd.live&accessToken=at.1sn9bw7j0llu53q698y06id777b4otkw-5bzy7rwdye-0879en4-tkefsfdxe&id=ysopen",
-                    "title": "正对摄像头4"
-                }
-            ], //摄像头数据
-            nowVideo: {}, //当前摄像头数据
+            cams: [], //摄像头数据
+            camToken: "",
+            nowVideo: "", //当前摄像头数据
             videoHeight: 0, // 摄像头高度
             nowController: "", //当前操作者
             applyDisabled: false, //申请令牌禁用
@@ -109,7 +106,7 @@ export default {
             options_show: { //操作选项数据
                 "qbkg": {
                     id: 1,
-                    name: '气泵',
+                    name: '气泵开关',
                     haveSwitch: true,
                     haveData: false,
                     open: false,
@@ -118,7 +115,7 @@ export default {
                 },
                 "fxbkg": {
                     id: 2,
-                    name: '分析泵',
+                    name: '分析泵开关',
                     haveSwitch: true,
                     haveData: false,
                     open: false,
@@ -127,7 +124,7 @@ export default {
                 },
                 "pl1": {
                     id: 3,
-                    name: '风机(PL1)',
+                    name: '风机频率(Hz)',
                     haveSwitch: true,
                     haveData: true,
                     open: false,
@@ -138,7 +135,7 @@ export default {
                 },
                 "pl2": {
                     id: 4,
-                    name: '解析水泵(PL2)',
+                    name: '解析水泵频率(Hz)',
                     haveSwitch: true,
                     haveData: true,
                     open: false,
@@ -149,7 +146,7 @@ export default {
                 },
                 "pl3": {
                     id: 5,
-                    name: '吸收水泵(PL3)',
+                    name: '吸收水泵频率(Hz)',
                     haveSwitch: true,
                     haveData: true,
                     open: false,
@@ -158,45 +155,45 @@ export default {
                     dataName: "pl3",
                     controlVisible: false
                 },
-                "m1": {
+                "mv1": {
                     id: 6,
-                    name: '吸收液流量调节阀(M1)',
-                    haveSwitch: false,
-                    haveData: true,
-                    data: '---',
-                    dataName: "kd1",
+                    name: '吸收液流量阀开关',
+                    haveSwitch: true,
+                    haveData: false,
+                    open: false,
+                    switchName: "m1kg",
                     controlVisible: false
                 },
-                "m2": {
+                "mv2": {
                     id: 7,
-                    name: '解吸液流量调节阀(M2)',
-                    haveSwitch: false,
-                    haveData: true,
-                    data: '---',
-                    dataName: "kd2",
+                    name: '解吸液流量阀(开关)',
+                    haveSwitch: true,
+                    haveData: false,
+                    open: false,
+                    switchName: "m2kg",
                     controlVisible: false
                 },
-                "m3": {
+                "mv3": {
                     id: 8,
-                    name: '解吸气体流量调节阀(M3)',
+                    name: '解吸气体流量阀(开度%)',
                     haveSwitch: false,
                     haveData: true,
                     data: '---',
                     dataName: "kd3",
                     controlVisible: false
                 },
-                "f1": {
+                "f1SV": {
                     id: 9,
-                    name: 'CO2流量(F1)',
+                    name: 'CO2流量F1(给定值)',
                     haveSwitch: false,
                     haveData: true,
                     data: '---',
                     dataName: "f1SV",
                     controlVisible: false
                 },
-                "f2": {
+                "f2SV": {
                     id: 10,
-                    name: '空气流量(F2)',
+                    name: '空气流量F2(给定值)',
                     haveSwitch: false,
                     haveData: true,
                     data: '---',
@@ -214,6 +211,14 @@ export default {
             timeChecked: false, // 是否发送过到时警告了
             dataTimer: -1, // 存储刷新数据定时器的变量
             msgAndTimeTimer: -1 // 存储刷新消息和结束时间的变量
+        }
+    },
+    computed: {
+        camSrc() {
+            return "https://open.ys7.com/ezopen/h5/iframe?url=" + this.nowVideo + "&autoplay=1&accessToken=" + this.camToken;
+        },
+        camNum() {
+            return this.cams.length;
         }
     },
     methods: {
@@ -254,6 +259,53 @@ export default {
                 })
                 return false;
             })                   
+        },
+        // 获取摄像头Token
+        getToken(){
+            fetch(this.URL + "api/resources/get_appToken", {
+                method: "GET",
+                headers: {
+                    Authorization: 'Bearer  ' + localStorage.getItem("token") 
+                }
+            }).then(res => res.json()).then(res => {
+                if (res.success){
+                    this.camToken = res.data.accessToken;
+                }else{
+                    this.$message({
+                        message: "摄像头Token已过期" ,
+                        type: 'error'
+                    })
+                    return false;
+                }
+            }).catch(err => {
+                this.$message({
+                    message: "加载失败，服务器出错" + err,
+                    type: 'error'
+                })
+                return false;
+            })
+        },
+        // 获取设备参数，填充摄像头数据
+        getDeviceData(){
+            fetch(this.URL + "api/resources/get_resource_by_ticket/" + this.ticketId, {
+                method: "GET",
+                headers: {
+                    Authorization: 'Bearer  ' + localStorage.getItem("token") 
+                }
+            }).then(res => res.json()).then(res => {
+                this.deviceId = res.data.id;
+                for (let u of res.data.urls){
+                    this.cams.push(u.url);
+                }
+
+                this.nowVideo = this.cams[0];
+            }).catch(err => {
+                this.$message({
+                    message: "加载失败，服务器出错" + err,
+                    type: 'error'
+                })
+                return false;
+            })
         },
         // 发送聊天内容
         sendBuffer(){
@@ -437,6 +489,66 @@ export default {
                 })
             })
         },
+        // 初始化设备
+        initDevice(){
+            let id = this.deviceId;
+
+            fetch(this.URL + "api/resources/init_param/" + id, {
+				method: "PUT",
+				headers: {
+					Authorization: 'Bearer  ' + localStorage.getItem("token"),
+					'Content-Type': 'application/json'
+				}
+			}).then(res => res.json()).then(res => {
+				if (res.success){
+					this.$message({
+						message: "已经设置为初始状态",
+						type: 'success'
+					})
+				}else{
+					this.$message({
+						message: "设置失败",
+						type: 'error'
+					})
+				}
+			}).catch(err => {
+				this.$message({
+					message: "加载失败，服务器出错" + err,
+					type: 'error'
+				})
+				return false;
+			})
+        },
+        // 关闭设备
+        closeDevice(){
+            let id = this.deviceId;
+
+            fetch(this.URL + "api/resources/close_param/" + id, {
+                method: "PUT",
+                headers: {
+                    Authorization: 'Bearer  ' + localStorage.getItem("token"),
+                    'Content-Type': 'application/json'
+                }
+            }).then(res => res.json()).then(res => {
+                if (res.success){
+                    this.$message({
+                        message: "已经设置为初始状态",
+                        type: 'success'
+                    })
+                }else{
+                    this.$message({
+                        message: "设置失败",
+                        type: 'error'
+                    })
+                }
+            }).catch(err => {
+                this.$message({
+                    message: "加载失败，服务器出错" + err,
+                    type: 'error'
+                })
+                return false;
+            })
+        },
         // 修改数据
         updateOption(index){
             let that = this;
@@ -601,7 +713,7 @@ export default {
                 if(res.success){
                     let newData = res.data.param;
                     let nowToken = res.data.token;
-                    
+                    console.log(res)
 
                     //更新当前操作者状态
                     this.nowController = nowToken;
@@ -613,28 +725,35 @@ export default {
                         this.releaseDisabled = true;
                     }
 
-
                     // 更新数据
                     this.params_show["t1"] = newData["t1"];
                     this.params_show["t2"] = newData["t2"];
                     this.params_show["t3"] = newData["t3"];
                     this.params_show["t4"] = newData["t4"];
+                    this.params_show["f1"] = newData["f1"];
+                    this.params_show["f2"] = newData["f2"];
+                    this.params_show["f4"] = newData["f4"];
+                    this.params_show["f5"] = newData["f5"];
                     this.params_show["a1"] = newData["a1"];
+                    this.params_show["p1"] = newData["p1"];
+                    this.params_show["p2"] = newData["p2"];
                     this.params_show["p3"] = newData["p3"];
+                    this.params_show["l1"] = newData["l1"];
+                    this.params_show["l2"] = newData["l2"];
 
                     this.options_show["qbkg"].open = Boolean(newData["qbkg"]);
                     this.options_show['fxbkg'].open = Boolean(newData['fxbkg']);
-                    this.options_show['f1'].data = newData['f1'];
-                    this.options_show['f2'].data = newData['f2'];
-                    this.options_show['m1'].data = newData['m1'];
-                    this.options_show['m2'].data = newData['m2'];
-                    this.options_show['m3'].data = newData['m3'];
                     this.options_show['pl1'].data = newData['pl1'];
                     this.options_show['pl1'].open = Boolean(newData['fjkg']);
                     this.options_show['pl2'].data = newData['pl2'];
                     this.options_show['pl2'].open = Boolean(newData['lxb1KG']);
                     this.options_show['pl3'].data = newData['pl3'];
                     this.options_show['pl3'].open = Boolean(newData['lxb2KG']);
+                    this.options_show['mv1'].open = Boolean(newData['m1KG']);
+                    this.options_show['mv2'].open = Boolean(newData['m2KG']);
+                    this.options_show['mv3'].data = newData['kd3'];
+                    this.options_show['f1SV'].data = newData['f1SV'];
+                    this.options_show['f2SV'].data = newData['f2SV'];
                 }else{
                     if (res.status === 402){
                         this.$message({
@@ -660,7 +779,6 @@ export default {
                     message: "加载失败，服务器出错" + err,
                     type: 'error'
                 })
-                return false;
             })                   
         },
         // 刷新留言板信息
@@ -757,15 +875,17 @@ export default {
         // 获取ticketId
         let query = this.$route.query;
         this.ticketId = +query.ticketId;
+
     },
     mounted() {
         window.addEventListener('beforeunload', e => this.beforeunloadHandler(e));
-        this.nowVideo = this.cams[0];
 
         //初始获取数据
         this.getEndTime();
         this.refreshMsg();
         this.refreshData();
+        this.getDeviceData();
+        this.getToken();
 
 
         // 循环刷新数据ing...
@@ -817,6 +937,7 @@ export default {
 #ex_img{
     height: 100%;
     object-fit: contain;
+    pointer-events: none;
 }
 
 .side_block{
@@ -980,53 +1101,53 @@ export default {
 }
 
 #qbkg{
-    top: 83%;
-    left: 15%;
+    top: 90%;
+    left: 17%;
 }
 
 #fxbkg{
-    top: 46%;
-    left: 25%;
+    top: 52%;
+    left: 41%;
 }
 
-#f1{
-    top: 24%;
-    left: 9%;
+#mv1{
+    top: 41%;
+    left: 48%;
 }
 
-#f2{
-    top: 35%;
-    left: 16%;
+#mv2{
+    top: 41%;
+    left: 67%;
 }
 
-#m1{
-    top: 42%;
-    left: 47%;
-}
-
-#m2{
-    top: 42%;
-    left: 65%;
-}
-
-#m3{
-    top: 62%;
+#mv3{
+    top: 67%;
     left: 90%;
 }
 
 #pl1{
-    left: 86%;
-    top: 83%;
+    left: 90%;
+    top: 82%;
 }
 
 #pl2{
     left: 46%;
-    top: 85%;
+    top: 94%;
 }
 
 #pl3{
-    left: 59%;
-    top: 85%;
+    left: 56%;
+    top: 94%;
+}
+
+#f1SV{
+    top: 29.5%;
+    left: 6%;
+}
+
+#f2SV{
+    top: 29.5%;
+    left: 15%;
 }
 
 /* 数据位置 */
@@ -1040,32 +1161,72 @@ export default {
 }
 
 #t1{
-    top: 10%;
-    left: 11%;
+    top: 8%;
+    left: 18%;
 }
 
 #t2{
-    top: 77.5%;
-    left: 31.5%;
+    top: 87%;
+    left: 31%;
 }
 
 #t3{
-    top: 18%;
-    left: 92%;
+    top: 53%;
+    left: 82%;
 }
 
 #t4{
-    top: 77.5%;
-    left: 80.5%;
+    top: 87%;
+    left: 76%;
 }
 
 #a1{
-    top: 30%;
-    left: 30.5%;
+    top: 28%;
+    left: 50%;
 }
 
 #p3{
-    top: 15%;
-    left: 68.5%;
+    top: 31.5%;
+    left: 91%;
+}
+
+#f1{
+    top: 27%;
+    left: 7%;
+}
+
+#f2{
+    top: 27%;
+    left: 16%;
+}
+
+#f4{
+    top: 20%;
+    left: 53%;
+}
+
+#f5{
+    top: 20%;
+    left: 65%;
+}
+
+#p1{
+    top: 16%;
+    left: 34%;
+}
+
+#p2{
+    top: 16%;
+    left: 74%;
+}
+
+#l1{
+    top: 81%;
+    left: 41.5%;
+}
+
+#l2{
+    top: 81%;
+    left: 65.5%;
 }
 </style>

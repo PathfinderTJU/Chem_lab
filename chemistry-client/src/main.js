@@ -12,6 +12,7 @@ Vue.config.productionTip = false;
 Vue.use(ElementUI);
 Vue.prototype.URL = URL;
 Vue.prototype.PUBLICKEY = "";
+Vue.prototype.webName = "化工虚拟实验平台";
 
 /* eslint-disable no-new */
 new Vue({

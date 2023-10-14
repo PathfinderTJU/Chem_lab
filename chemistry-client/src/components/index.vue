@@ -6,7 +6,7 @@
                 <div class="logo_block">
                     <img id="logo" src="../assets/logo2.png"/>
                 </div>
-                <div id="title">化工虚拟实验平台</div>
+                <div id="title">{{webName}}</div>
                 <el-button id="logout" @click="logout" type="text">退出登录</el-button>
             </el-header>
             <el-container class="container">
@@ -46,6 +46,7 @@ export default {
     name: 'index',
     data() {
         return {
+            webName: this.webName,
             userType: ""
         }
     },

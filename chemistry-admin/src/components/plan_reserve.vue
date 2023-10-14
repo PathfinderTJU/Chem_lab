@@ -22,7 +22,7 @@
                 </el-table-column>
                 <el-table-column v-for="(item, index) in classes" :key="item" :label="item" align="center">
                     <template slot-scope="scope">
-                        <span v-if="scope.row.open[index]">{{scope.row.reserve[index]}}/3</span>
+                        <span v-if="scope.row.open[index]">剩余：{{scope.row.reserve[index]}}/3</span>
                         <span v-else>未开放</span>
                     </template>
                 </el-table-column>

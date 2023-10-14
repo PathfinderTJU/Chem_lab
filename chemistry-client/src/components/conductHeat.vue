@@ -25,8 +25,8 @@
             <div class="ex_title">化工传热实验</div>
             <div class="ex_time">实验结束时间：<span style="font-weight:bold;color: #409EFF">{{endTime}}</span></div>
             <!-- 摄像头 -->
-            <iframe :src="nowVideo.url" id="ysopen" ref="video" :style="{height:videoHeight + 'px'}" allowfullscreen></iframe>
-            <el-pagination id="video_change_button" small layout="prev, pager, next" :total="40" @current-change="changeCam"></el-pagination>
+            <iframe :src=camSrc   id="ysopen" ref="video" :style="{height:videoHeight + 'px'}" allowfullscreen></iframe>
+            <el-pagination id="video_change_button" small layout="prev, pager, next" :total=camNum @current-change="changeCam"></el-pagination>
             <!-- 控制模块 -->
             <div class="control_block">
                 <div id="now_controller">
@@ -37,6 +37,10 @@
                 </div>
                 <el-button class="control_button" type="primary" @click="applyToken" :disabled="applyDisabled">申请操作</el-button>
                 <el-button class="control_button" type="warning" @click="releaseToken" :disabled="releaseDisabled">结束操作</el-button>
+            </div>
+            <div class="control_block">
+                <el-button class="control_button" type="info" @click="initDevice" :disabled="releaseDisabled" slot="reference">初始化设备</el-button>
+                <el-button class="control_button" type="info" @click="closeDevice" :disabled="releaseDisabled" slot="reference">关闭设备</el-button>
             </div>
             <!-- 退出按钮 -->
             <div class="ex_bottom">
@@ -72,6 +76,7 @@ export default {
     data(){
         return{
             ticketId: 1,
+            deviceId: -1,
             endTime: "---",
             snEndTime: [""],
             params_show:{ //显示的数据
@@ -83,65 +88,72 @@ export default {
                 't6': '---',
                 't7': '---',
                 't8': '---',
+                't9': '---',
+                't10': '---',
+                't11': '---',
                 'p1': '---',
                 'p2': '---',
-                'l2': '---'
+                'p3': '---',
+                'l1': '---',
+                'e1': '---'
             }, 
-            cams: [
-                {
-                    "url": "https://open.ys7.com/jssdk/theme.html?url=ezopen://open.ys7.com/E33136313/1.live&accessToken=at.cff96jf31wykuf4u1slsv1q30mjf68jk-45gicg5yqz-0uhwyqm-s4lsfznkn&id=ysopen",
-                    "title": "正对摄像头1"
-                },
-                {
-                    "url": "https://open.ys7.com/jssdk/theme.html?url=ezopen://open.ys7.com/C78957921/1.live&accessToken=ra.2xirbtir599z2cp2dwlaxeglbrld1n4w-5mmn4448p3-02e06mr-vi8cgdax5&id=ysopen",
-                    "title": "正对摄像头2"
-                },
-                {
-                    "url": "https://open.ys7.com/jssdk/theme.html?url=ezopen://open.ys7.com/C78957921/1.live&accessToken=ra.2xirbtir599z2cp2dwlaxeglbrld1n4w-5mmn4448p3-02e06mr-vi8cgdax5&id=ysopen",
-                    "title": "正对摄像头3"
-                },
-                {
-                    "url": "https://open.ys7.com/jssdk/theme.html?url=ezopen://open.ys7.com/C78957921/1.live&accessToken=ra.2xirbtir599z2cp2dwlaxeglbrld1n4w-5mmn4448p3-02e06mr-vi8cgdax5&id=ysopen",
-                    "title": "正对摄像头4"
-                }
-            ], //摄像头数据
-            nowVideo: {}, //当前摄像头数据
+            cams: [], //摄像头数据
+            camToken: "",
+            nowVideo: "", //当前摄像头数据
             videoHeight: 0, // 摄像头高度
             nowController: "", //当前操作者
             applyDisabled: false, //申请令牌禁用
             releaseDisabled: true, //释放令牌禁用
             switchColor: "#E6A23C", //齿轮颜色
             options_show: { //操作选项数据
-                'v1': {
+                'mv1': {
                     id: 1,
-                    name: '套管换热器空气入口阀(V1)',
+                    name: '套管换热器空气入口阀开关',
                     haveSwitch: true,
                     haveData: false,
                     switchName: 'v1',
                     open: false,
                     controlVisible: false
                 },
-                'v2': {
+                'mv2': {
                     id: 2,
-                    name: '套管换热器蒸汽入口阀(V2)',
+                    name: '强化管换热器空气入口阀开关',
                     haveSwitch: true,
                     haveData: false,
                     switchName: 'v2',
                     open: false,
                     controlVisible: false
                 },
-                'v3': {
+                'mv3': {
                     id: 3,
-                    name: '列管换热器空气入口阀(V3)',
+                    name: '列管换热器空气入口阀开关',
                     haveSwitch: true,
                     haveData: false,
                     switchName: 'v3',
                     open: false,
                     controlVisible: false
                 },
-                'v4': {
+                'mv4': {
                     id: 4,
-                    name: '列管换热器蒸汽入口阀(V4)',
+                    name: '套管换热器蒸汽入口阀开关',
+                    haveSwitch: true,
+                    haveData: false,
+                    switchName: 'v4',
+                    open: false,
+                    controlVisible: false
+                },
+                'mv5': {
+                    id: 5,
+                    name: '强化管换热器蒸汽入口阀开关',
+                    haveSwitch: true,
+                    haveData: false,
+                    switchName: 'v5',
+                    open: false,
+                    controlVisible: false
+                },
+                'mv6': {
+                    id: 6,
+                    name: '列管换热器蒸汽入口阀开关',
                     haveSwitch: true,
                     haveData: false,
                     switchName: 'v4',
@@ -149,8 +161,8 @@ export default {
                     controlVisible: false
                 },
                 'pl': {
-                    id: 5,
-                    name: '风机变频器频率(PL)',
+                    id: 7,
+                    name: '风机频率(Hz)',
                     haveSwitch: true,
                     haveData: true,
                     switchName: 'fjkg',
@@ -159,12 +171,12 @@ export default {
                     open: false,
                     controlVisible: false
                 },
-                'e1': {
-                    id: 6,
-                    name: '加热',
+                'e1sv': {
+                    id: 8,
+                    name: '加热电压E1(给定值)',
                     haveSwitch: true,
                     haveData: true,
-                    dataName: 'e1',
+                    dataName: 'e1SV',
                     switchName: 'jrkg',
                     data: '---',
                     open: false,
@@ -181,6 +193,14 @@ export default {
             timeChecked: false, // 是否发送过到时警告了
             dataTimer: -1, // 存储刷新数据定时器的变量
             msgAndTimeTimer: -1 // 存储刷新消息和结束时间的变量
+        }
+    },
+    computed: {
+        camSrc() {
+            return "https://open.ys7.com/ezopen/h5/iframe?url=" + this.nowVideo + "&autoplay=1&accessToken=" + this.camToken;
+        },
+        camNum() {
+            return this.cams.length;
         }
     },
     methods: {
@@ -221,6 +241,53 @@ export default {
                 })
                 return false;
             })                   
+        },
+        // 获取设备参数，填充摄像头数据
+        getDeviceData(){
+            fetch(this.URL + "api/resources/get_resource_by_ticket/" + this.ticketId, {
+                method: "GET",
+                headers: {
+                    Authorization: 'Bearer  ' + localStorage.getItem("token") 
+                }
+            }).then(res => res.json()).then(res => {
+                this.deviceId = res.data.id;
+                for (let u of res.data.urls){
+                    this.cams.push(u.url);
+                }
+
+                this.nowVideo = this.cams[0];
+            }).catch(err => {
+                this.$message({
+                    message: "加载失败，服务器出错" + err,
+                    type: 'error'
+                })
+                return false;
+            })
+        },
+        // 获取摄像头Token
+        getToken(){
+            fetch(this.URL + "api/resources/get_appToken", {
+                method: "GET",
+                headers: {
+                    Authorization: 'Bearer  ' + localStorage.getItem("token") 
+                }
+            }).then(res => res.json()).then(res => {
+                if (res.success){
+                    this.camToken = res.data.accessToken;
+                }else{
+                    this.$message({
+                        message: "摄像头Token已过期" ,
+                        type: 'error'
+                    })
+                    return false;
+                }
+            }).catch(err => {
+                this.$message({
+                    message: "加载失败，服务器出错" + err,
+                    type: 'error'
+                })
+                return false;
+            })
         },
         // 发送聊天内容
         sendBuffer(){
@@ -404,6 +471,64 @@ export default {
                 })
             })
         },
+        initDevice(){
+            let id = this.deviceId;
+
+            fetch(this.URL + "api/resources/init_param/" + id, {
+				method: "PUT",
+				headers: {
+					Authorization: 'Bearer  ' + localStorage.getItem("token"),
+					'Content-Type': 'application/json'
+				}
+			}).then(res => res.json()).then(res => {
+				if (res.success){
+					this.$message({
+						message: "已经设置为初始状态",
+						type: 'success'
+					})
+				}else{
+					this.$message({
+						message: "设置失败",
+						type: 'error'
+					})
+				}
+			}).catch(err => {
+				this.$message({
+					message: "加载失败，服务器出错" + err,
+					type: 'error'
+				})
+				return false;
+			})
+        },
+        closeDevice(){
+            let id = this.deviceId;
+
+            fetch(this.URL + "api/resources/close_param/" + id, {
+                method: "PUT",
+                headers: {
+                    Authorization: 'Bearer  ' + localStorage.getItem("token"),
+                    'Content-Type': 'application/json'
+                }
+            }).then(res => res.json()).then(res => {
+                if (res.success){
+                    this.$message({
+                        message: "已经设置为初始状态",
+                        type: 'success'
+                    })
+                }else{
+                    this.$message({
+                        message: "设置失败",
+                        type: 'error'
+                    })
+                }
+            }).catch(err => {
+                this.$message({
+                    message: "加载失败，服务器出错" + err,
+                    type: 'error'
+                })
+                return false;
+            })
+        },
         // 修改数据
         updateOption(index){
             let name = index + "";
@@ -466,6 +591,7 @@ export default {
         // 修改开关状态
         updateSwitch(index){
             let name = index + "";
+            let temp_name = name;
             name = this.options_show[name].switchName;
             let requestData = {
                 paramName: name.toUpperCase(),
@@ -588,17 +714,24 @@ export default {
                     this.params_show["t6"] = newData["t6"];
                     this.params_show["t7"] = newData["t7"];
                     this.params_show["t8"] = newData["t8"];
+                    this.params_show["t9"] = newData["t9"];
+                    this.params_show["t10"] = newData["t10"];
+                    this.params_show["t11"] = newData["t11"];
                     this.params_show["p1"] = newData["p1"];
                     this.params_show["p2"] = newData["p2"];
-                    this.params_show["l2"] = newData["l2"];
+                    this.params_show["p3"] = newData["p3"];
+                    this.params_show["l1"] = newData["l1"];
+                    this.params_show["e1"] = newData["e1"];
                 
 
-                    this.options_show["v1"].open = Boolean(newData["v1"]);
-                    this.options_show['v2'].open = Boolean(newData['v2']);
-                    this.options_show['v3'].open = Boolean(newData['v3']);
-                    this.options_show['v4'].open = Boolean(newData['v4']);
-                    this.options_show['e1'].open = Boolean(newData['jrkg']);
-                    this.options_show['e1'].data = newData['e1'];
+                    this.options_show["mv1"].open = Boolean(newData["v1"]);
+                    this.options_show['mv2'].open = Boolean(newData['v2']);
+                    this.options_show['mv3'].open = Boolean(newData['v3']);
+                    this.options_show['mv4'].open = Boolean(newData['v4']);
+                    this.options_show['mv5'].open = Boolean(newData['v5']);
+                    this.options_show['mv6'].open = Boolean(newData['v6']);
+                    this.options_show['e1sv'].open = Boolean(newData['jrkg']);
+                    this.options_show['e1sv'].data = newData['e1SV'];
                     this.options_show['pl'].open = Boolean(newData['fjkg']);
                     this.options_show['pl'].data = newData['pl'];
                 }else{
@@ -726,12 +859,13 @@ export default {
     },
     mounted() {
         window.addEventListener('beforeunload', e => this.beforeunloadHandler(e));
-        this.nowVideo = this.cams[0];
 
         //初始获取数据
         this.getEndTime();
         this.refreshMsg();
         this.refreshData();
+        this.getDeviceData();
+        this.getToken();
 
 
         // 循环刷新数据ing...
@@ -783,6 +917,7 @@ export default {
 #ex_img{
     height: 100%;
     object-fit: contain;
+    pointer-events: none;
 }
 
 .side_block{
@@ -945,34 +1080,44 @@ export default {
     width: 100%;
 }
 
-#v1{
-    top: 17%;
-    left: 18%;
+#mv1{
+    top: 13%;
+    left: 5%;
 }
 
-#v2{
-    top: 1.5%;
-    left: 67%;
+#mv2{
+    top: 32.5%;
+    left: 5%;
 }
 
-#v3{
-    top: 42%;
-    left: 18%;
+#mv3{
+    top: 53%;
+    left: 5%;
 }
 
-#v4{
-    top: 25%;
-    left: 69%;
+#mv4{
+    top: 1%;
+    left: 73%;
 }
 
-#e1{
-    top: 85%;
-    left: 85.5%;
+#mv5{
+    top: 20%;
+    left: 73%;
+}
+
+#mv6{
+    top: 37%;
+    left: 71%;
+}
+
+#e1sv{
+    top: 89%;
+    left: 92%;
 }
 
 #pl{
-    top: 90%;
-    left: 25%;
+    top: 92%;
+    left: 20%;
 }
 
 /* 数据位置 */
@@ -986,58 +1131,83 @@ export default {
 }
 
 #t1{
-    top: 26%;
-    left: 22.7%;
+    top: 3.5%;
+    left: 8%;
 }
 
 #t2{
-    top: 32%;
-    left: 77%;
+    top: 7.5%;
+    left: 85%;
 }
 
 #t3{
-    top: 29%;
-    left: 55%;
+    top: 23%;
+    left: 8%;
 }
 
 #t4{
-    top: 23%;
-    left: 34.5%;
+    top: 27%;
+    left: 85%;
 }
 
 #t5{
-    top: 1%;
-    left: 22.5%;
+    top: 45%;
+    left: 8%;
 }
 
 #t6{
-    top: 7%;
-    left: 77%;
+    top: 48.5%;
+    left: 85%;
 }
 
 #t7{
-    top: 1%;
-    left: 45%;
+    top: 40%;
+    left: 17%;
 }
 
 #t8{
-    top: 63%;
-    left: 76%;
+    top: 44%;
+    left: 69%;
+}
+
+#t9{
+    top: 70%;
+    left: 93%;
+}
+
+#t10{
+    top: 6%;
+    left: 42%;
+}
+
+#t11{
+    top: 26%;
+    left: 42%;
 }
 
 #p1{
-    top: 52%;
-    left: 23.5%;
+    top: 17.5%;
+    left: 34%;
 }
 
 #p2{
-    top: 17.7%;
-    left: 45.5%;
+    top: 37%;
+    left: 34%;
 }
 
-#l2{
-    top: 67%;
-    left: 87.7%;
+#p3{
+    top: 64%;
+    left: 7%;
+}
+
+#l1{
+    top: 83%;
+    left: 83%;
+}
+
+#e1{
+    top: 86.5%;
+    left: 94%;
 }
 
 </style>

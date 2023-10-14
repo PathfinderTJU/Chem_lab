@@ -300,6 +300,7 @@ export default {
 							type: 'error'
 						})
 					}else{
+					
 						this.$message({
 							message: "未知错误" + res.status,
 							type: 'error'
@@ -465,7 +466,7 @@ export default {
 								})
 							}else{
 								this.$message({
-									message: "未知错误" + res.status,
+									message: res.status + res.msg,
 									type: 'error'
 								})
 							}
