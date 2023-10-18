@@ -421,7 +421,7 @@ export default {
                 if (valid) { //验证通过
                     this.isLoading = true;
 
-                    fetch(this.URL + "api/daily-open-plans/items?sn=" + this.updateIndex, {
+                    fetch(this.URL + "api/daily-open-plans/items/" + this.updateIndex, {
                         method: 'PUT',
                         headers: {
                             Authorization: 'Bearer  ' + localStorage.getItem("token"),
