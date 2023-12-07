@@ -16,7 +16,7 @@
                     <div v-if="value.haveSwitch">
                         <el-switch v-model.lazy="switchBuffer" active-text="打开" inactive-text="关闭" @change="updateSwitch(key)" :disabled="releaseDisabled"></el-switch>
                     </div>
-                <i :style="{color:switchColor}" style="padding-left: 5px;font-size:30px;cursor:pointer;}" class="el-icon-s-tools" slot="reference"></i>
+                <i :style="{color:switchColor}" style="padding-left: 5px;font-size:30px;cursor:pointer;" class="el-icon-s-tools" slot="reference"></i>
                 </el-popover>
             </span>
         </div>
@@ -26,7 +26,7 @@
             <div class="ex_time">实验结束时间：<span style="font-weight:bold;color: #409EFF">{{endTime}}</span></div>
             <!-- 摄像头 -->
             <iframe :src=camSrc   id="ysopen" ref="video" :style="{height:videoHeight + 'px'}" allowfullscreen></iframe>
-            <el-pagination id="video_change_button" small layout="prev, pager, next" :total=camNum @current-change="changeCam"></el-pagination>
+            <el-pagination id="video_change_button" small layout="prev, pager, next" :page-count="camNum" @current-change="changeCam"></el-pagination>
             <!-- 控制模块 -->
             <div class="control_block">
                 <div id="now_controller">
@@ -657,7 +657,7 @@ export default {
             let name = index + "";
             let temp_name = name;
             name = this.options_show[name].switchName;
-            console.log(name)
+
             let requestData = {
                 paramName: name.toUpperCase(),
                 paramValue: Number(this.switchBuffer)

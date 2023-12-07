@@ -9,6 +9,7 @@ import plan_day from '@/components/plan_day'
 import plan_edit from '@/components/plan_edit'
 import announcement from '@/components/announcement'
 import init from '@/components/init'
+import close from '@/components/close'
 import empty from '@/components/empty'
 import plan_reserve from '@/components/plan_reserve'
 import password from '@/components/password'
@@ -72,6 +73,10 @@ export default new Router({
                     path: 'init',
                     component: init
                 },
+                // {
+                //     path: 'close',
+                //     component: close
+                // },
                 {
                     path: '*',
                     component: empty
