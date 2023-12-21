@@ -22,7 +22,10 @@
         </div>
         <div class="side_block" ref="sideBlock">
             <!-- 标题和时间 -->
-            <div class="ex_title">流动过程实验</div>
+            <div class="ex_title">
+                流动过程实验
+                <div class="ex_sub_title">{{ deviceName }}</div>
+            </div>
             <div class="ex_time">实验结束时间：<span style="font-weight:bold;color: #409EFF">{{endTime}}</span></div>
             <!-- 摄像头 -->
             <iframe :src=camSrc   id="ysopen" ref="video" :style="{height:videoHeight + 'px'}" allowfullscreen></iframe>
@@ -76,6 +79,8 @@ export default {
     data(){
         return{
             ticketId: 1,
+            deviceId: -1,
+            deviceName: "",
             endTime: "---",
             snEndTime: [""],
             params_show:{ //显示的数据
@@ -246,6 +251,7 @@ export default {
                 }
 
                 this.nowVideo = this.cams[0];
+                this.deviceName = res.data.name;
             }).catch(err => {
                 this.$message({
                     message: "加载失败，服务器出错" + err,
@@ -902,6 +908,10 @@ export default {
     box-sizing: border-box;
     height: 10%;
     vertical-align: middle;
+}
+
+.ex_sub_title{
+    font-size: 16px;
 }
 
 .ex_time{
