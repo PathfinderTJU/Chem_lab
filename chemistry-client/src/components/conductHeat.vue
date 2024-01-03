@@ -160,7 +160,7 @@ export default {
                     name: '列管换热器蒸汽入口阀开关',
                     haveSwitch: true,
                     haveData: false,
-                    switchName: 'v4',
+                    switchName: 'v6',
                     open: false,
                     controlVisible: false
                 },

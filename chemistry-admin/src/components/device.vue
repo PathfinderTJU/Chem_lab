@@ -548,6 +548,7 @@ export default {
 			}).then(res => res.json()).then(res => {
 				if (res.success) {
 					let result = res.data;
+					console.log(result);
 					for (let i = 0; i < result.length; i++) {
 						result[i].typeShow = this.types.find(function (e) {
 							return e.value === result[i].type
