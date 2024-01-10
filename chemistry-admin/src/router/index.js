@@ -73,10 +73,10 @@ export default new Router({
                     path: 'init',
                     component: init
                 },
-                // {
-                //     path: 'close',
-                //     component: close
-                // },
+                {
+                    path: 'close',
+                    component: close
+                },
                 {
                     path: '*',
                     component: empty

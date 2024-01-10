@@ -660,6 +660,7 @@ export default {
                     Authorization: 'Bearer  ' + localStorage.getItem("token") 
                 }
             }).then(res => res.json()).then(res => {
+                console.log(res)
                 if(res.success){
                     let newData = res.data.param;
                     let nowToken = res.data.token;
