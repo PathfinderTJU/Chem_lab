@@ -104,7 +104,7 @@ export default{
                 v5: 7,
                 v6: 8,
                 fjkg: 9,
-                jrlg: 10
+                jrkg: 10
             }],
             flowForm: [{
                 pl: 1,
