@@ -22,7 +22,7 @@
 - 服务层：部署在服务器上的后端应用程序接收和响应用户层发送的数据请求，与数据库进行数据交换。用户的控制指令以数据的形式存储在数据库中，服务层无法直接操作实验设备。
 - 设备层：实验设备通过读取数据库执行对应指令。
 
-![image-20250801151332464](E:\Projects\化工平台\frontend\graph\structure.png)
+![image-20250801151332464](./graph/structure.png)
 
 ### 前端基本功能与效果图
 
@@ -30,39 +30,39 @@
 
   - 预约：查看实验设备的预约状态，预约实验时间
 
-    ![image-20250801153058796](E:\Projects\化工平台\frontend\graph\client_preserve.png)
+    ![image-20250801153058796](./graph/client_preserve.png)
 
   - 实验：在预约时间内进入对应的实验房间，操作设备进行实验。各类数据和交互在示意图上显示，摄像头显示设备实时情况。同一时刻只能有一人进行操作，所有操作会被记录到实验记录中。
 
-    ![image-20250801153617358](E:\Projects\化工平台\frontend\graph\client_exp.png)
+    ![image-20250801153617358](./graph/client_exp.png)
 
 - 管理端（admin）：供实验室管理员使用，主要功能包括：
 
   - 设备管理：维护实验设备信息，设定实验设备的初始参数，拥有控制实验设备的最高权限
 
-    ![image-20250801151700573](E:\Projects\化工平台\frontend\graph\admin_device.png)
+    ![image-20250801151700573](./graph/admin_device.png)
 
   - 开放计划管理：制订实验设备的开放计划，批量管理实验设备的开放时段，查看实验设备的开放情况和预约情况
 
     设置日开放计划：
 
-    ![image-20250801152616625](E:\Projects\化工平台\frontend\graph\admin_plan.png)
+    ![image-20250801152616625](./graph/admin_plan.png)
 
     批量管理设备开放时间：
 
-    ![image-20250801152709373](E:\Projects\化工平台\frontend\graph\admin_setplan.png)
+    ![image-20250801152709373](./graph/admin_setplan.png)
 
     查看设备开放情况：
 
-    ![image-20250801152743340](E:\Projects\化工平台\frontend\graph\admin_open.png)
+    ![image-20250801152743340](./graph/admin_open.png)
 
     查看预约情况：
 
-    ![image-20250801152817816](E:\Projects\化工平台\frontend\graph\admin_preserve.png)		
+    ![image-20250801152817816](./graph/admin_preserve.png)		
 
 	- 账户管理：维护账户信息
 
-	  ![image-20250801152956907](E:\Projects\化工平台\frontend\graph\admin_profile.png)
+	  ![image-20250801152956907](./graph/admin_profile.png)
 
 ### 项目使用方法
 
