@@ -60,9 +60,9 @@
 
     ![image-20250801152817816](./graph/admin_preserve.png)		
 
-	- 账户管理：维护账户信息
+  - 账户管理：维护账户信息
 
-	  ![image-20250801152956907](./graph/admin_profile.png)
+    ![image-20250801152956907](./graph/admin_profile.png)
 
 ### 项目使用方法
 
